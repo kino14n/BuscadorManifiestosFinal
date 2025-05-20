@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getDocuments, updateDocumentCodes, deleteDocuments } from '../utils/storage.js';
-import DocumentForm from './DocumentForm';
+import DocumentForm from './DocumentForm.js';
 
 const DocumentList = ({ onView, onPrint }) => {
   const [allDocuments, setAllDocuments] = useState([]);

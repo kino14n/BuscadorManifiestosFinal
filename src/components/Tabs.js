@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import DocumentForm from './DocumentForm';
-import SearchForm from './SearchForm';
-import DocumentList from './DocumentList';
+import DocumentForm from './DocumentForm.js';
+import SearchForm from './SearchForm.js';
+import DocumentList from './DocumentList.js';
 import { getDocumentById } from '../utils/storage.js';
 
 const Tabs = () => {
