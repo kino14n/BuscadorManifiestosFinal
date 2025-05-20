@@ -1,3 +1,4 @@
+// src/App.js
 import React, { useState, useEffect } from 'react';
 import DocumentList from './components/DocumentList.js';
 import SearchForm from './components/SearchForm.js';
@@ -8,15 +9,16 @@ import Storage from './utils/storage.js';
 function App() {
   const [documents, setDocuments] = useState([]);
 
+  // Lee los documentos guardados
   useEffect(() => {
-    const saved = Storage.get('manifiestos') || [];
+    const saved = Storage.getDocuments() || []; // ⚠️ llamada corregida
     setDocuments(saved);
   }, []);
 
   const addDocument = doc => {
     const updated = [doc, ...documents];
     setDocuments(updated);
-    Storage.save('manifiestos', updated);
+    Storage.saveDocument(doc);
   };
 
   return (
