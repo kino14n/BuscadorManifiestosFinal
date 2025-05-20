@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getDocuments, updateDocumentCodes, deleteDocuments } from '../utils/storage';
+import { getDocuments, updateDocumentCodes, deleteDocuments } from '../utils/storage.js';
 import DocumentForm from './DocumentForm';
 
 const DocumentList = ({ onView, onPrint }) => {

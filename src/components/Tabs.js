@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import DocumentForm from './DocumentForm';
 import SearchForm from './SearchForm';
 import DocumentList from './DocumentList';
-import { getDocumentById } from '../utils/storage';
+import { getDocumentById } from '../utils/storage.js';
 
 const Tabs = () => {
   const [activeTab, setActiveTab] = useState('search');

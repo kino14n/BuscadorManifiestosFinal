@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { saveDocument } from '../utils/storage';
+import { saveDocument } from '../utils/storage.js';
 
 const DocumentForm = ({ onSave, existingDoc }) => {
   const [name, setName] = useState(existingDoc?.name || '');
