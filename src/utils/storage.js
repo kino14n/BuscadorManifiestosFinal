@@ -24,6 +24,9 @@ export function updateDocumentById(id, updatedData) {
   return docs;
 }
 
+// Alias para coincidir con tus imports
+export const updateDocumentCodes = updateDocumentById;
+
 // Elimina documentos cuyos ids estén en el array ids
 export function deleteDocuments(ids) {
   const docs = getDocuments().filter(doc => !ids.includes(doc.id));
@@ -48,6 +51,7 @@ const Storage = {
   saveDocument,
   getDocuments,
   updateDocumentById,
+  updateDocumentCodes,
   deleteDocuments,
   getDocumentById,
   searchDocumentsByCodes,
