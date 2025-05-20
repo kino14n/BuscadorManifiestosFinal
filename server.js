@@ -13,8 +13,11 @@ const __dirname = path.dirname(__filename);
 // Puerto
 const PORT = process.env.PORT || 3000;
 
+// Ruta al build (un nivel arriba de src)
+const buildPath = path.join(__dirname, '..', 'build');
+
 // Sirve el build de React
-app.use(express.static(path.join(__dirname, 'build')));
+app.use(express.static(buildPath));
 
 // Endpoint API
 app.get('/api/manifiestos', async (req, res) => {
@@ -27,9 +30,9 @@ app.get('/api/manifiestos', async (req, res) => {
   }
 });
 
-// Cualquier otra ruta devuelve index.html
+// Cualquier otra ruta devuelve index.html del build
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+  res.sendFile(path.join(buildPath, 'index.html'));
 });
 
 // Arranca el servidor
