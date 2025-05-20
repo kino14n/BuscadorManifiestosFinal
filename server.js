@@ -1,16 +1,22 @@
 // server.js
-
 import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import pool from './db.js';
 
 const app = express();
+
+// __dirname en ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Puerto
 const PORT = process.env.PORT || 3000;
 
-// Sirve el build de React (la carpeta build se crea en postinstall)
-app.use(express.static(path.join(process.cwd(), 'build')));
+// Sirve el build de React
+app.use(express.static(path.join(__dirname, 'build')));
 
-// Ejemplo de endpoint para tu base de datos
+// Endpoint API
 app.get('/api/manifiestos', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM manifiestos');
@@ -21,10 +27,12 @@ app.get('/api/manifiestos', async (req, res) => {
   }
 });
 
-// Cualquier otra ruta, devuelve el index.html de React
+// Cualquier otra ruta devuelve index.html
 app.get('*', (req, res) => {
-  res.sendFile(path.join(process.cwd(), 'build', 'index.html'));
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-// Arranca el servidor en el puerto configurado
-app.listen(PORT, () => console.log(`🚀 Server en puerto ${PORT}`));
+// Arranca el servidor
+app.listen(PORT, () => {
+  console.log(`🚀 Server en puerto ${PORT}`);
+});
