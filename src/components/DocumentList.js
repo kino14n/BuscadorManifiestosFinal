@@ -1,79 +1,128 @@
 // src/components/DocumentList.js
 import React, { useState } from 'react';
 
-export default function DocumentList({ documentos, onView, onPrint, onDelete }) {
-  const [visibleCodes, setVisibleCodes] = useState({});
+export default function DocumentList({
+  documentos,
+  onView,
+  onPrint,
+  onEdit,
+  onDelete
+}) {
+  const [visibleCodes, setVisibleCodes] = useState(new Set());
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [filter, setFilter] = useState('');
 
-  const toggleCodes = (id) => {
-    setVisibleCodes(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleSelect = (id) => {
+    const s = new Set(selectedIds);
+    s.has(id) ? s.delete(id) : s.add(id);
+    setSelectedIds(s);
   };
 
-  if (!documentos.length) return <p>No hay manifiestos.</p>;
+  const toggleCodes = (id) => {
+    const s = new Set(visibleCodes);
+    s.has(id) ? s.delete(id) : s.add(id);
+    setVisibleCodes(s);
+  };
+
+  // filter by name
+  const shown = documentos.filter(d =>
+    d.name.toLowerCase().includes(filter.toLowerCase())
+  );
 
   return (
-    <div className="space-y-4">
-      {documentos.map(doc => (
-        <div key={doc.id} className="p-4 border rounded-lg bg-white shadow-sm">
-          <div className="flex justify-between items-start">
-            <div>
-              <h4 className="font-medium text-lg">{doc.name || doc.titulo}</h4>
-              {doc.date && <p className="text-sm text-gray-600">{doc.date}</p>}
-              {doc.fileName && (
-                <p className="text-sm text-gray-500">Archivo: {doc.fileName}</p>
-              )}
-            </div>
+    <div className="p-6 bg-white rounded-lg shadow-md">
+      {/* Acciones masivas */}
+      {selectedIds.size > 0 && (
+        <div className="mb-4 flex justify-end gap-4 text-sm">
+          <button
+            onClick={() => onDelete(Array.from(selectedIds))}
+            className="text-red-500 hover:underline"
+          >
+            Eliminar ({selectedIds.size})
+          </button>
+          <button
+            onClick={() => onView(Array.from(selectedIds))}
+            className="text-blue-500 hover:underline"
+          >
+            Ver ({selectedIds.size})
+          </button>
+          <button
+            onClick={() => onPrint(Array.from(selectedIds))}
+            className="text-green-500 hover:underline"
+          >
+            Imprimir ({selectedIds.size})
+          </button>
+        </div>
+      )}
 
-            <div className="flex gap-3">
-              {onView && (
-                <button
-                  onClick={() => onView([doc.id])}
-                  className="text-blue-500 hover:text-blue-700 text-sm"
-                >
-                  Ver
-                </button>
-              )}
-              {onPrint && (
-                <button
-                  onClick={() => onPrint([doc.id])}
-                  className="text-green-500 hover:text-green-700 text-sm"
-                >
-                  Imprimir
-                </button>
-              )}
-              <button
-                onClick={() => toggleCodes(doc.id)}
-                className="text-blue-500 hover:text-blue-700 text-sm"
-              >
-                {visibleCodes[doc.id] ? 'Ocultar Códigos' : 'Ver Códigos'}
+      {/* Buscador de nombre */}
+      <input
+        type="text"
+        placeholder="Buscar por nombre de documento..."
+        className="w-full mb-4 p-2 border rounded"
+        value={filter}
+        onChange={e => setFilter(e.target.value)}
+      />
+
+      {/* Lista */}
+      {shown.map(doc => (
+        <div key={doc.id} className="mb-4 border rounded-lg p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                checked={selectedIds.has(doc.id)}
+                onChange={() => toggleSelect(doc.id)}
+                className="mr-3 h-4 w-4 text-blue-600"
+              />
+              <div>
+                <p className="font-medium">{doc.name}</p>
+                <p className="text-sm text-gray-600">
+                  {doc.date} — {doc.fileName}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 text-sm">
+              <button onClick={() => onView([doc.id])} className="text-blue-500 hover:underline">
+                Ver
               </button>
-              {onDelete && (
-                <button
-                  onClick={() => onDelete([doc.id])}
-                  className="text-red-500 hover:text-red-700 text-sm"
-                >
-                  Eliminar
-                </button>
-              )}
+              <button onClick={() => onPrint([doc.id])} className="text-green-500 hover:underline">
+                Imprimir
+              </button>
+              <button onClick={() => onEdit(doc.id)} className="text-green-500 hover:underline">
+                Editar
+              </button>
             </div>
           </div>
 
-          {visibleCodes[doc.id] && doc.codes?.length > 0 && (
-            <div className="mt-3">
-              <p className="text-sm font-medium mb-1">Códigos:</p>
-              <div className="flex flex-wrap gap-2">
-                {doc.codes.map(c => (
+          {/* Toggle Códigos */}
+          <div className="mt-2">
+            <button
+              onClick={() => toggleCodes(doc.id)}
+              className="text-blue-500 text-sm hover:underline"
+            >
+              {visibleCodes.has(doc.id) ? 'Ocultar Códigos' : 'Ver Códigos'}
+            </button>
+
+            {visibleCodes.has(doc.id) && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {doc.codes.map(code => (
                   <span
-                    key={c}
-                    className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded"
+                    key={code}
+                    className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
                   >
-                    {c}
+                    {code}
                   </span>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       ))}
+
+      {shown.length === 0 && (
+        <p className="text-center text-gray-500">No hay documentos para mostrar.</p>
+      )}
     </div>
   );
 }
