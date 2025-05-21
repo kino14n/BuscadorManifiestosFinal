@@ -39,6 +39,9 @@ export const updateDocumentCodes = (id, newCodes) => {
   return false;
 };
 
+// Alias para compatibilidad con import ‘updateDocument’
+export const updateDocument = updateDocumentCodes;
+
 /**
  * Borra varios documentos por su id
  */
@@ -107,3 +110,5 @@ export const searchDocumentsByCodes = (codes) => {
     missingCodes
   };
 };
+
+export { getDocuments };
