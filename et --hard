@@ -1,0 +1,115 @@
+[33mtag restore-frontend-stable-2025-05-21[m
+Tagger: Wil <disenokinocomp@gmail.com>
+Date:   Wed May 21 08:48:02 2025 -0500
+
+Punto de restauración: frontend estable 21-May-2025
+
+[33mcommit ee4d7be00626d9096e8b02b94a9417a6e782d19b[m[33m ([m[1;33mtag: [m[1;33mrestore-frontend-stable-2025-05-21[m[33m)[m
+Author: Wil <disenokinocomp@gmail.com>
+Date:   Wed May 21 08:41:37 2025 -0500
+
+    🔧 Corrijo server.js: backticks y rutas build
+
+[1mdiff --git a/server.js b/server.js[m
+[1mindex 4215d6e..54c06a1 100644[m
+[1m--- a/server.js[m
+[1m+++ b/server.js[m
+[36m@@ -1,24 +1,91 @@[m
+[32m+[m[32m// server.js[m
+ import express from 'express';[m
+ import path from 'path';[m
+[31m-import pool from './db.js';[m
+[32m+[m[32mimport fs from 'fs';[m
+[32m+[m[32mimport { fileURLToPath } from 'url';[m
+[32m+[m[32mimport pool from './db.js';  // Asegúrate de que este archivo exporta correctamente tu pool de PG[m
+ [m
+ const app = express();[m
+[32m+[m
+[32m+[m[32m// __dirname en ESM[m
+[32m+[m[32mconst __filename = fileURLToPath(import.meta.url);[m
+[32m+[m[32mconst __dirname = path.dirname(__filename);[m
+[32m+[m
+[32m+[m[32m// Puerto desde env o 3000 por defecto[m
+ const PORT = process.env.PORT || 3000;[m
+ [m
+[31m-app.use(express.static(path.join(process.cwd(), 'build')));[m
+[32m+[m[32m// Middlewares[m
+[32m+[m[32mapp.use(express.json());[m
+[32m+[m
+[32m+[m[32m// Detecta carpeta build en la raíz o dentro de src[m
+[32m+[m[32mlet buildPath = path.join(__dirname, 'build');[m
+[32m+[m[32mif (!fs.existsSync(buildPath)) {[m
+[32m+[m[32m  buildPath = path.join(__dirname, 'src', 'build');[m
+[32m+[m[32m}[m
+[32m+[m[32mapp.use(express.static(buildPath));[m
+ [m
+[32m+[m[32m// Endpoint GET /api/manifiestos[m
+ app.get('/api/manifiestos', async (req, res) => {[m
+   try {[m
+[31m-    const { rows } = await pool.query('SELECT * FROM manifiestos');[m
+[32m+[m[32m    const { rows } = await pool.query([m
+[32m+[m[32m      'SELECT * FROM manifiestos ORDER BY fecha DESC'[m
+[32m+[m[32m    );[m
+     res.json(rows);[m
+   } catch (err) {[m
+[31m-    console.error(err);[m
+[31m-    res.status(500).send('Error en la consulta');[m
+[32m+[m[32m    console.error('Error consultando manifiestos:', err);[m
+[32m+[m[32m    res.status(500).json({ error: 'Consulta fallida' });[m
+[32m+[m[32m  }[m
+[32m+[m[32m});[m
+[32m+[m
+[32m+[m[32m// Endpoint POST /api/manifiestos[m
+[32m+[m[32mapp.post('/api/manifiestos', async (req, res) => {[m
+[32m+[m[32m  const { titulo, contenido } = req.body;[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const result = await pool.query([m
+[32m+[m[32m      'INSERT INTO manifiestos (titulo, contenido) VALUES ($1, $2) RETURNING *',[m
+[32m+[m[32m      [titulo, contenido][m
+[32m+[m[32m    );[m
+[32m+[m[32m    res.status(201).json(result.rows[0]);[m
+[32m+[m[32m  } catch (err) {[m
+[32m+[m[32m    console.error('Error insertando manifiesto:', err);[m
+[32m+[m[32m    res.status(500).json({ error: 'Inserción fallida' });[m
+   }[m
+ });[m
+ [m
+[32m+[m[32m// Endpoint PUT /api/manifiestos/:id[m
+[32m+[m[32mapp.put('/api/manifiestos/:id', async (req, res) => {[m
+[32m+[m[32m  const { id } = req.params;[m
+[32m+[m[32m  const { titulo, contenido } = req.body;[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const result = await pool.query([m
+[32m+[m[32m      'UPDATE manifiestos SET titulo = $1, contenido = $2 WHERE id = $3 RETURNING *',[m
+[32m+[m[32m      [titulo, contenido, id][m
+[32m+[m[32m    );[m
+[32m+[m[32m    res.json(result.rows[0]);[m
+[32m+[m[32m  } catch (err) {[m
+[32m+[m[32m    console.error('Error actualizando manifiesto:', err);[m
+[32m+[m[32m    res.status(500).json({ error: 'Actualización fallida' });[m
+[32m+[m[32m  }[m
+[32m+[m[32m});[m
+[32m+[m
+[32m+[m[32m// Endpoint DELETE /api/manifiestos/:id[m
+[32m+[m[32mapp.delete('/api/manifiestos/:id', async (req, res) => {[m
+[32m+[m[32m  const { id } = req.params;[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    await pool.query('DELETE FROM manifiestos WHERE id = $1', [id]);[m
+[32m+[m[32m    res.status(204).end();[m
+[32m+[m[32m  } catch (err) {[m
+[32m+[m[32m    console.error('Error eliminando manifiesto:', err);[m
+[32m+[m[32m    res.status(500).json({ error: 'Eliminación fallida' });[m
+[32m+[m[32m  }[m
+[32m+[m[32m});[m
+[32m+[m
+[32m+[m[32m// Fallback: sirve index.html para todas las rutas que no coincidan[m
+ app.get('*', (req, res) => {[m
+[31m-  res.sendFile(path.join(process.cwd(), 'build', 'index.html'));[m
+[32m+[m[32m  res.sendFile(path.join(buildPath, 'index.html'));[m
+ });[m
+ [m
+[31m-app.listen(PORT, () => console.log(\`🚀 Server en puerto \${PORT}\`));[m
+[32m+[m[32m// Arranca el servidor sin barras invertidas en los backticks[m
+[32m+[m[32mapp.listen(PORT, () => {[m
+[32m+[m[32m  console.log(`🚀 Server en puerto ${PORT}`);[m
+[32m+[m[32m});[m
