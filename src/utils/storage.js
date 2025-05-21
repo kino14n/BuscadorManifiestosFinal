@@ -2,108 +2,117 @@
 
 const STORAGE_KEY = 'documents';
 
-const getDocuments = () => {
+/**
+ * Devuelve el array completo de documentos desde localStorage
+ */
+export function getDocuments() {
   const stored = localStorage.getItem(STORAGE_KEY);
   return stored ? JSON.parse(stored) : [];
-};
+}
 
-const saveDocuments = (docs) => {
+/**
+ * Guarda todo el array de documentos en localStorage
+ * @param {Array} docs 
+ */
+function saveDocuments(docs) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
-};
+}
 
 /**
  * Guarda o actualiza un documento completo
+ * @param {Object} document 
  */
-export const saveDocument = (document) => {
-  const documents = getDocuments();
-  const idx = documents.findIndex(d => d.id === document.id);
+export function saveDocument(document) {
+  const docs = getDocuments();
+  const idx = docs.findIndex(d => d.id === document.id);
   if (idx >= 0) {
-    documents[idx] = document;
+    docs[idx] = document;
   } else {
-    documents.push(document);
+    docs.push(document);
   }
-  saveDocuments(documents);
-};
+  saveDocuments(docs);
+}
 
 /**
  * Actualiza sólo los códigos de un documento existente
+ * @param {number|string} id 
+ * @param {Array<string>} newCodes 
+ * @returns {boolean} true si encontró y actualizó
  */
-export const updateDocumentCodes = (id, newCodes) => {
-  const documents = getDocuments();
-  const idx = documents.findIndex(d => d.id === id);
+export function updateDocumentCodes(id, newCodes) {
+  const docs = getDocuments();
+  const idx = docs.findIndex(d => d.id === id);
   if (idx >= 0) {
-    documents[idx].codes = newCodes;
-    saveDocuments(documents);
+    docs[idx].codes = newCodes;
+    saveDocuments(docs);
     return true;
   }
   return false;
-};
+}
 
 /**
  * Borra varios documentos por su id
+ * @param {Array<number|string>} ids 
+ * @returns {boolean} true si se eliminó al menos uno
  */
-export const deleteDocuments = (ids) => {
-  const documents = getDocuments();
-  const filtered = documents.filter(d => !ids.includes(d.id));
+export function deleteDocuments(ids) {
+  const docs = getDocuments();
+  const filtered = docs.filter(d => !ids.includes(d.id));
   saveDocuments(filtered);
-  return filtered.length !== documents.length;
-};
+  return filtered.length !== docs.length;
+}
 
 /**
- * Obtiene uno solo por id
+ * Obtiene un documento concreto por id
+ * @param {number|string} id 
+ * @returns {Object|undefined}
  */
-export const getDocumentById = (id) => {
+export function getDocumentById(id) {
   return getDocuments().find(d => d.id === id);
-};
+}
 
 /**
  * Busca documentos que cubran la lista de códigos:
  * - Devuelve la lista óptima (greedy set cover)
  * - Y los códigos que no aparecen en ningún documento
+ * @param {Array<string>} codes 
+ * @returns {{ documents: Array, missingCodes: Array<string> }}
  */
-export const searchDocumentsByCodes = (codes) => {
-  const documents = getDocuments();
+export function searchDocumentsByCodes(codes) {
+  const docs = getDocuments();
 
-  // Códigos que no existen en *ningún* doc
-  const allCodes = new Set(documents.flatMap(d => d.codes));
+  // Códigos inexistentes en todo el sistema
+  const allCodes = new Set(docs.flatMap(d => d.codes));
   const missingCodes = codes.filter(code => !allCodes.has(code));
 
-  // Ordenamos documentos por fecha (más reciente primero)
-  const sorted = [...documents].sort((a, b) => new Date(b.date) - new Date(a.date));
+  // Ordenamos por fecha (más recientes primero)
+  const sorted = [...docs].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const selected = [];
   const covered = new Set();
 
-  // Cuántos códigos nuevos aporta un doc
-  const newCount = (doc) =>
+  const newCount = doc =>
     doc.codes.filter(c => codes.includes(c) && !covered.has(c)).length;
 
-  // Greedy: mientras queden códigos por cubrir
+  // Greedy: elegimos el doc que cubre más códigos nuevos hasta cubrirlos todos
   while (covered.size < codes.length - missingCodes.length) {
     let best = null;
-    let bestCount = 0;
-
+    let bestCnt = 0;
     for (const doc of sorted) {
       if (selected.some(d => d.id === doc.id)) continue;
       const cnt = newCount(doc);
-      if (cnt > bestCount) {
-        bestCount = cnt;
+      if (cnt > bestCnt) {
+        bestCnt = cnt;
         best = doc;
       }
     }
     if (!best) break;
-
-    const matched = best.codes.filter(c => codes.includes(c) && !covered.has(c));
+    const matched = best.codes.filter(
+      c => codes.includes(c) && !covered.has(c)
+    );
     matched.forEach(c => covered.add(c));
-
-    selected.push({
-      ...best,
-      matchedCodes: matched
-    });
+    selected.push({ ...best, matchedCodes: matched });
   }
 
-  return {
-    documents: selected,
-    missingCodes
-  };
-};
+  return { documents: selected, missingCodes };
+}
