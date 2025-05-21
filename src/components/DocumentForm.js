@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { saveDocument } from '../utils/storage';
+import { saveDocument } from '../utils/storage.js';
 
-const DocumentForm = ({ onSave, existingDoc }) => {
+export default function DocumentForm({ onSave, existingDoc }) {
   const [name, setName] = useState(existingDoc?.name || '');
   const [date, setDate] = useState(existingDoc?.date || '');
-  const [codes, setCodes] = useState(existingDoc?.codes.join('\n') || '');
+  const [codes, setCodes] = useState(existingDoc?.codes?.join('\n') || '');
   const [file, setFile] = useState(null);
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef(null);
@@ -15,14 +15,16 @@ const DocumentForm = ({ onSave, existingDoc }) => {
       id: existingDoc?.id || Date.now(),
       name,
       date,
-      codes: codes.split('\n').filter(code => code.trim() !== ''),
+      codes: codes.split('\n').filter((c) => c.trim() !== ''),
       fileName: file ? file.name : existingDoc?.fileName || null,
-      fileData: file ? URL.createObjectURL(file) : existingDoc?.fileData || null
+      fileData: file
+        ? URL.createObjectURL(file)
+        : existingDoc?.fileData || null,
     };
-    
+
     saveDocument(document);
     setSuccess(true);
-    
+
     if (!existingDoc) {
       setName('');
       setDate('');
@@ -30,9 +32,8 @@ const DocumentForm = ({ onSave, existingDoc }) => {
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
-    
+
     if (onSave) onSave();
-    
     setTimeout(() => setSuccess(false), 3000);
   };
 
@@ -52,8 +53,11 @@ const DocumentForm = ({ onSave, existingDoc }) => {
       )}
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Nombre del documento</label>
+          <label htmlFor="name" className="block text-sm font-medium mb-1">
+            Nombre del documento
+          </label>
           <input
+            id="name"
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -62,8 +66,11 @@ const DocumentForm = ({ onSave, existingDoc }) => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Fecha del documento</label>
+          <label htmlFor="date" className="block text-sm font-medium mb-1">
+            Fecha del documento
+          </label>
           <input
+            id="date"
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
@@ -72,8 +79,11 @@ const DocumentForm = ({ onSave, existingDoc }) => {
           />
         </div>
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Archivo PDF</label>
+          <label htmlFor="file" className="block text-sm font-medium mb-1">
+            Archivo PDF
+          </label>
           <input
+            id="file"
             type="file"
             ref={fileInputRef}
             onChange={handleFileChange}
@@ -88,8 +98,11 @@ const DocumentForm = ({ onSave, existingDoc }) => {
           )}
         </div>
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Códigos (uno por línea)</label>
+          <label htmlFor="codes" className="block text-sm font-medium mb-1">
+            Códigos (uno por línea)
+          </label>
           <textarea
+            id="codes"
             value={codes}
             onChange={(e) => setCodes(e.target.value)}
             className="w-full p-2 border rounded h-40"
@@ -106,19 +119,5 @@ const DocumentForm = ({ onSave, existingDoc }) => {
       </form>
     </div>
   );
-};
-
-export default DocumentForm;
-// src/components/DocumentList.js
-import React from 'react';
-
-export default function DocumentList({ documentos }) {
-  if (!documentos.length) return <p>No hay manifiestos.</p>;
-  return (
-    <ul>
-      {documentos.map(doc => (
-        <li key={doc.id}>{doc.titulo}</li>
-      ))}
-    </ul>
-  );
 }
+
