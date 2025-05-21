@@ -265,3 +265,17 @@ const DocumentList = ({ onView, onPrint }) => {
 export default DocumentList;
 
 // DONE
+
+// src/components/DocumentList.js
+import React from 'react';
+
+export default function DocumentList({ documentos }) {
+  if (!documentos.length) return <p>No hay manifiestos.</p>;
+  return (
+    <ul>
+      {documentos.map(doc => (
+        <li key={doc.id}>{doc.titulo}</li>
+      ))}
+    </ul>
+  );
+}
