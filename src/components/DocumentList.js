@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getDocuments, deleteDocuments } from '../utils/storage';
+import { getDocuments, deleteDocuments } from '../utils/storage.js';
 
 const DocumentList = ({ onView, onPrint, onEdit }) => {
   const [allDocs, setAllDocs] = useState(getDocuments());
@@ -19,8 +19,7 @@ const DocumentList = ({ onView, onPrint, onEdit }) => {
   const handleDelete = () => {
     if (selected.size && window.confirm('Eliminar seleccionados?')) {
       deleteDocuments([...selected]);
-      const rem = allDocs.filter(d => !selected.has(d.id));
-      setAllDocs(rem);
+      setAllDocs(allDocs.filter(d => !selected.has(d.id)));
       setSelected(new Set());
     }
   };
@@ -35,7 +34,6 @@ const DocumentList = ({ onView, onPrint, onEdit }) => {
         onChange={e => setFilter(e.target.value)}
         className="w-full p-2 border rounded mb-4"
       />
-
       {visible.map(doc => (
         <div key={doc.id} className="p-4 border-b flex justify-between items-center">
           <label className="flex items-center gap-2">
@@ -56,9 +54,7 @@ const DocumentList = ({ onView, onPrint, onEdit }) => {
           </div>
         </div>
       ))}
-
       {visible.length === 0 && <p className="text-gray-500">No hay documentos.</p>}
-
       {selected.size > 0 && (
         <div className="mt-4 flex justify-end gap-2">
           <button onClick={handleDelete} className="text-red-500">Eliminar ({selected.size})</button>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { saveDocument, getDocumentById, deleteDocuments } from '../utils/storage';
+import { saveDocument, getDocumentById, deleteDocuments } from '../utils/storage.js';
 
 const DocumentForm = ({ existingId, onSaved }) => {
   const existingDoc = existingId != null ? getDocumentById(existingId) : null;
@@ -11,13 +11,12 @@ const DocumentForm = ({ existingId, onSaved }) => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    // cuando cambie existingId recargamos el formulario
     if (existingDoc) {
       setName(existingDoc.name);
       setDate(existingDoc.date);
       setCodes(existingDoc.codes.join('\n'));
       setFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      fileInputRef.current && (fileInputRef.current.value = '');
     }
   }, [existingId]);
 
@@ -35,14 +34,13 @@ const DocumentForm = ({ existingId, onSaved }) => {
     setSuccess(true);
     if (!existingDoc) {
       setName(''); setDate(''); setCodes(''); setFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      fileInputRef.current && (fileInputRef.current.value = '');
     }
     onSaved?.();
     setTimeout(() => setSuccess(false), 3000);
   };
 
   const handleFileChange = e => setFile(e.target.files[0]);
-
   const handleDelete = () => {
     if (existingDoc && window.confirm('¿Eliminar este documento?')) {
       deleteDocuments([existingDoc.id]);

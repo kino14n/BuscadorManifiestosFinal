@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { searchDocumentsByCodes } from '../utils/storage';
+import { searchDocumentsByCodes } from '../utils/storage.js';
 
 const SearchForm = ({ onView, onPrint }) => {
   const [codes, setCodes] = useState('');
