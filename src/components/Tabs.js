@@ -1,70 +1,64 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import DocumentForm from './DocumentForm.js';
-import DocumentList from './DocumentList.js';
 import SearchForm from './SearchForm.js';
-import {
-  fetchManifiestos,
-  createManifiesto,
-  updateManifiesto,
-  deleteManifiestos,
-} from '../services/api.js';
+import DocumentList from './DocumentList.js';
+import { getDocumentById } from '../utils/storage.js';
 
 export default function Tabs() {
-  const [activeTab, setActiveTab] = useState('search');
-  const [docs, setDocs] = useState([]);
-  const [selected, setSelected] = useState([]);
+  const [tab, setTab] = useState('search');
+  const [viewer, setViewer] = useState({ open:false, pdf:null });
 
-  // cargar lista
-  useEffect(() => {
-    if (activeTab === 'list') load();
-  }, [activeTab]);
-
-  const load = async () => {
-    const data = await fetchManifiestos();
-    setDocs(data);
-    setSelected([]);
+  const handleView = async ids => {
+    if (ids.length===1) {
+      const doc = await getDocumentById(ids[0]);
+      if (doc.archivo_url) setViewer({ open:true, pdf:doc.archivo_url });
+    } else {
+      ids.forEach(async id => {
+        const d = await getDocumentById(id);
+        d.archivo_url && window.open(d.archivo_url,'_blank');
+      });
+    }
   };
 
-  const onSave = async (doc, isNew) => {
-    if (isNew) await createManifiesto(doc);
-    else await updateManifiesto(doc.id, doc);
-    load();
-    setActiveTab('list');
+  const handlePrint = async ids => {
+    ids.forEach(async id => {
+      const d = await getDocumentById(id);
+      if (d.archivo_url) {
+        const w = window.open(d.archivo_url,'_blank');
+        w.onload = ()=>w.print();
+      }
+    });
   };
 
-  const onDelete = async () => {
-    await deleteManifiestos(selected);
-    load();
-  };
+  const closeViewer = ()=>setViewer({ open:false, pdf:null });
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex border-b">
-        {['search','upload','list'].map(tab => (
+      {viewer.open && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center">
+          <div className="bg-white w-3/4 h-3/4 p-4 rounded-lg flex flex-col">
+            <div className="flex justify-between">
+              <h3>Vista previa</h3>
+              <button onClick={closeViewer}>Cerrar</button>
+            </div>
+            <iframe src={viewer.pdf} className="flex-1 mt-2" />
+          </div>
+        </div>
+      )}
+      <div className="flex border-b mb-4">
+        {['search','upload','list'].map(t=>(
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`py-2 px-4 ${activeTab===tab?'border-b-2 border-blue-500 text-blue-500':'text-gray-500'}`}
+            key={t}
+            onClick={()=>setTab(t)}
+            className={`py-2 px-4 ${tab===t?'border-b-2 border-blue-500 text-blue-500':'text-gray-600'}`}
           >
-            {tab==='search'? 'Buscar Documentos' : tab==='upload'? 'Subir Documento' : 'Consultar Documentos'}
+            { t==='search'? 'Buscar Documentos' : t==='upload'? 'Subir Documento' : 'Consultar Documentos' }
           </button>
         ))}
       </div>
-      <div className="mt-4">
-        {activeTab === 'search' && <SearchForm />}
-        {activeTab === 'upload' && <DocumentForm onSave={d=>onSave(d,true)} />}
-        {activeTab === 'list' && (
-          <DocumentList
-            documentos={docs}
-            selected={selected}
-            onSelect={setSelected}
-            onView={ids=>window.open(docs.find(d=>d.id===ids[0]).file_data,'_blank')}
-            onPrint={ids=>ids.forEach(id=>window.open(docs.find(d=>d.id===id).file_data).print())}
-            onEdit={doc=>setActiveTab('upload') || setTimeout(()=>onSave(doc,false),0)}
-            onDelete={onDelete}
-          />
-        )}
-      </div>
+      {tab==='search' && <SearchForm onView={handleView} onPrint={handlePrint} />}
+      {tab==='upload' && <DocumentForm onSave={()=>setTab('list')} />}
+      {tab==='list' && <DocumentList onView={handleView} onPrint={handlePrint} />}
     </div>
   );
 }

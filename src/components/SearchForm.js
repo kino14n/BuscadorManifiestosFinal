@@ -7,89 +7,72 @@ export default function SearchForm({ onView, onPrint }) {
   const [searched, setSearched] = useState(false);
   const [sel, setSel] = useState(new Set());
 
-  const handleSearch = e => {
+  const handleSearch = async e => {
     e.preventDefault();
-    const list = codes.split('\n').map(c=>c.trim()).filter(c=>c);
-    setResults(searchDocumentsByCodes(list));
+    const list = codes.split('\n').filter(c=>c.trim());
+    const res = await searchDocumentsByCodes(list);
+    setResults(res);
     setSearched(true);
     setSel(new Set());
   };
 
-  const handleReset = () => {
-    setCodes(''); setResults({documents:[],missingCodes:[]});
-    setSearched(false); setSel(new Set());
-  };
-
-  const toggle = id => {
-    const ns = new Set(sel);
-    ns.has(id)? ns.delete(id): ns.add(id);
-    setSel(ns);
+  const toggleSelect = id => {
+    const s = new Set(sel);
+    s.has(id)? s.delete(id): s.add(id);
+    setSel(s);
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow">
-      <h2 className="text-xl mb-4">Buscar Documentos</h2>
+    <div className="p-6 bg-white rounded-lg shadow-md">
+      <h2 className="text-xl font-semibold mb-4">Buscar Documentos</h2>
       <form onSubmit={handleSearch}>
         <textarea
+          className="w-full border p-2 h-32 mb-4"
+          placeholder="Códigos uno por línea"
           value={codes} onChange={e=>setCodes(e.target.value)}
-          className="w-full p-2 border rounded h-32 mb-4"
-          placeholder="Códigos, uno por línea" />
-        <div className="flex gap-2 mb-4">
-          <button type="submit" className="flex-1 bg-blue-500 text-white py-2 rounded">Buscar</button>
-          <button type="button" onClick={handleReset}
-            className="flex-1 bg-gray-200 py-2 rounded">Limpiar</button>
-        </div>
+        />
+        <button className="bg-blue-500 text-white py-2 px-4 rounded mr-2">Buscar</button>
+        <button type="button" onClick={()=>{setCodes('');setSearched(false);setResults({documents:[],missingCodes:[]});}} className="bg-gray-200 py-2 px-4 rounded">Limpiar</button>
       </form>
-
       {searched && (
-        <>
-          {results.missingCodes.length > 0 && (
-            <div className="mb-4 p-3 bg-yellow-100 rounded border-yellow-300">
-              <strong>No encontrados:</strong>{' '}
-              {results.missingCodes.join(', ')}
+        <div className="mt-6">
+          {results.missingCodes.length>0 && (
+            <div className="mb-4 p-3 bg-yellow-50 rounded">
+              <strong>Códigos no encontrados:</strong>
+              <div className="flex flex-wrap gap-1 mt-1">
+                {results.missingCodes.map(c=>(
+                  <span key={c} className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">{c}</span>
+                ))}
+              </div>
             </div>
           )}
-          {results.documents.length > 0
-            ? results.documents.map(doc => (
-              <div key={doc.id} className="mb-4 p-4 border rounded">
+          {results.documents.length>0 ? (
+            results.documents.map(d=>(
+              <div key={d.id} className="border p-4 mb-4 rounded">
                 <label className="flex items-center gap-2">
-                  <input type="checkbox"
-                    checked={sel.has(doc.id)}
-                    onChange={()=>toggle(doc.id)}
-                    className="h-4 w-4 text-blue-600" />
+                  <input type="checkbox" checked={sel.has(d.id)} onChange={()=>toggleSelect(d.id)} />
                   <div>
-                    <div className="font-medium">{doc.name}</div>
-                    <div className="text-sm text-gray-600">{doc.date}</div>
+                    <p className="font-medium">{d.nombre}</p>
+                    <p className="text-sm text-gray-600">{d.fecha}</p>
                   </div>
                 </label>
-                <div className="mt-2">
-                  <span className="font-sm font-medium">Códigos:</span>
-                  <div className="flex gap-1 flex-wrap mt-1">
-                    {doc.matchedCodes.map(c=><span key={c}
-                      className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
-                      {c}
-                    </span>)}
-                  </div>
-                </div>
-                <div className="mt-2 flex gap-2">
-                  <button onClick={()=>onView([doc.id])}
-                    className="text-blue-500 text-sm">Ver</button>
-                  <button onClick={()=>onPrint([doc.id])}
-                    className="text-green-500 text-sm">Imprimir</button>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {d.matchedCodes.map(c=>(
+                    <span key={c} className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs">{c}</span>
+                  ))}
                 </div>
               </div>
             ))
-            : <p>No se encontraron documentos.</p>
-          }
+          ) : (
+            <p className="text-gray-600">No hay documentos que cubran esos códigos.</p>
+          )}
           {sel.size>0 && (
-            <div className="mt-4 flex gap-2 justify-end">
-              <button onClick={()=>onView([...sel])}
-                className="bg-blue-500 text-white px-4 py-2 rounded">Ver ({sel.size})</button>
-              <button onClick={()=>onPrint([...sel])}
-                className="bg-green-500 text-white px-4 py-2 rounded">Imprimir ({sel.size})</button>
+            <div className="flex gap-2 mt-4">
+              <button onClick={()=>onView([...sel])} className="bg-blue-500 text-white py-2 px-4 rounded">Ver ({sel.size})</button>
+              <button onClick={()=>onPrint([...sel])} className="bg-green-500 text-white py-2 px-4 rounded">Imprimir ({sel.size})</button>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );
