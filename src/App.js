@@ -1,17 +1,16 @@
-import React from 'react';
-import Tabs from './components/Tabs';
+-import React, { useState, useEffect } from 'react';
+-import DocumentForm from './components/DocumentForm';
+-import DocumentList from './components/DocumentList';
+-import SearchForm from './components/SearchForm';
+-import Tabs from './components/Tabs';
++import React, { useState, useEffect } from 'react';
++import DocumentForm from './components/DocumentForm.js';
++import DocumentList from './components/DocumentList.js';
++import SearchForm from './components/SearchForm.js';
++import Tabs from './components/Tabs.js';
 
-const App = () => {
-  return (
-    <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-3xl font-bold text-center mb-8">DocuTrack</h1>
-        <Tabs />
-      </div>
-    </div>
-  );
-};
+ function App() {
+   // ... tu lógica
+ }
 
-export default App;
-
-// DONE
+ export default App;
