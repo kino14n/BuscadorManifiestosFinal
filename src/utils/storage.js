@@ -105,3 +105,9 @@ export const searchDocumentsByCodes = (codes) => {
 export { getDocuments };
 
 // DONE
+// Borra un documento por su id
+export function deleteDocument(id) {
+  const all = JSON.parse(localStorage.getItem('manifiestos') || '[]');
+  const filtered = all.filter(doc => doc.id !== id);
+  localStorage.setItem('manifiestos', JSON.stringify(filtered));
+}
