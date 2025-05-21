@@ -1,68 +1,43 @@
 import React, { useState } from 'react';
-import { searchDocumentsByCodes } from '../utils/storage.js';
+import { searchDocumentsByCodes } from '../utils/storage';
 
-export default function SearchForm({ onView, onPrint }) {
+const SearchForm = ({ onView, onPrint }) => {
   const [codes, setCodes] = useState('');
   const [results, setResults] = useState({ documents: [], missingCodes: [] });
   const [searched, setSearched] = useState(false);
-  const [selectedDocs, setSelectedDocs] = useState(new Set());
+  const [selected, setSelected] = useState(new Set());
 
-  const handleSearch = (e) => {
+  const handleSearch = e => {
     e.preventDefault();
-    const codeList = codes.split('\n').filter((code) => code.trim() !== '');
-    const searchResults = searchDocumentsByCodes(codeList);
-    setResults(searchResults);
+    const list = codes.split('\n').map(c => c.trim()).filter(Boolean);
+    const res = searchDocumentsByCodes(list);
+    setResults(res);
     setSearched(true);
-    setSelectedDocs(new Set());
+    setSelected(new Set());
   };
 
-  const handleReset = () => {
-    setCodes('');
-    setResults({ documents: [], missingCodes: [] });
-    setSearched(false);
-    setSelectedDocs(new Set());
-  };
-
-  const toggleSelectDoc = (docId) => {
-    const newSelected = new Set(selectedDocs);
-    if (newSelected.has(docId)) newSelected.delete(docId);
-    else newSelected.add(docId);
-    setSelectedDocs(newSelected);
-  };
-
-  const handleViewSelected = () => {
-    if (onView) onView(Array.from(selectedDocs));
-  };
-  const handlePrintSelected = () => {
-    if (onPrint) onPrint(Array.from(selectedDocs));
+  const toggle = id => {
+    const s = new Set(selected);
+    s.has(id) ? s.delete(id) : s.add(id);
+    setSelected(s);
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
+    <div className="p-6 bg-white rounded shadow">
       <h2 className="text-xl font-semibold mb-4">Buscar Documentos</h2>
       <form onSubmit={handleSearch}>
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">
-            Códigos a buscar (uno por línea)
-          </label>
-          <textarea
-            value={codes}
-            onChange={(e) => setCodes(e.target.value)}
-            className="w-full p-2 border rounded h-40"
-            placeholder="Pega aquí los códigos a buscar, uno por línea"
-          />
-        </div>
-        <div className="flex gap-2 mb-6">
-          <button
-            type="submit"
-            className="flex-1 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
-          >
-            Buscar
-          </button>
+        <textarea
+          value={codes}
+          onChange={e => setCodes(e.target.value)}
+          className="w-full p-2 border rounded h-32 mb-4"
+          placeholder="Códigos, uno por línea"
+        />
+        <div className="flex gap-2 mb-4">
+          <button type="submit" className="flex-1 bg-blue-500 text-white py-2 rounded">Buscar</button>
           <button
             type="button"
-            onClick={handleReset}
-            className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded hover:bg-gray-300 transition"
+            onClick={() => { setCodes(''); setResults({ documents: [], missingCodes: [] }); setSearched(false); }}
+            className="flex-1 bg-gray-200 text-gray-800 py-2 rounded"
           >
             Limpiar
           </button>
@@ -70,21 +45,14 @@ export default function SearchForm({ onView, onPrint }) {
       </form>
 
       {searched && (
-        <div className="mt-6">
-          <h3 className="text-lg font-medium mb-2">Resultados:</h3>
-
+        <div>
           {results.missingCodes.length > 0 && (
-            <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-              <h4 className="font-medium text-yellow-800 mb-1">
-                Códigos no encontrados:
-              </h4>
-              <div className="flex flex-wrap gap-1">
-                {results.missingCodes.map((code) => (
-                  <span
-                    key={code}
-                    className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded"
-                  >
-                    {code}
+            <div className="p-3 mb-4 bg-yellow-50 border border-yellow-200 rounded">
+              <strong>Códigos no encontrados:</strong>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {results.missingCodes.map(c => (
+                  <span key={c} className="px-2 py-1 bg-yellow-100 rounded text-yellow-800 text-xs">
+                    {c}
                   </span>
                 ))}
               </div>
@@ -93,45 +61,31 @@ export default function SearchForm({ onView, onPrint }) {
 
           {results.documents.length > 0 ? (
             <div className="space-y-4">
-              {results.documents.map((doc) => (
+              {results.documents.map(doc => (
                 <div key={doc.id} className="p-4 border rounded-lg">
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-3">
+                  <div className="flex justify-between items-center">
+                    <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
-                        checked={selectedDocs.has(doc.id)}
-                        onChange={() => toggleSelectDoc(doc.id)}
-                        className="h-4 w-4 text-blue-600 rounded"
+                        checked={selected.has(doc.id)}
+                        onChange={() => toggle(doc.id)}
                       />
                       <div>
                         <h4 className="font-medium">{doc.name}</h4>
                         <p className="text-sm text-gray-600">{doc.date}</p>
                       </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => onView([doc.id])}
-                        className="text-blue-500 hover:text-blue-700 text-sm"
-                      >
-                        Ver
-                      </button>
-                      <button
-                        onClick={() => onPrint([doc.id])}
-                        className="text-blue-500 hover:text-blue-700 text-sm"
-                      >
-                        Imprimir
-                      </button>
+                    </label>
+                    <div className="space-x-2">
+                      <button onClick={() => onView([doc.id])} className="text-blue-500">Ver</button>
+                      <button onClick={() => onPrint([doc.id])} className="text-green-500">Imprimir</button>
                     </div>
                   </div>
                   <div className="mt-2">
-                    <p className="text-sm font-medium">Códigos encontrados:</p>
+                    <small className="font-medium">Códigos encontrados:</small>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {doc.matchedCodes.map((code) => (
-                        <span
-                          key={code}
-                          className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
-                        >
-                          {code}
+                      {doc.matchedCodes.map(c => (
+                        <span key={c} className="px-2 py-1 bg-blue-100 rounded text-blue-800 text-xs">
+                          {c}
                         </span>
                       ))}
                     </div>
@@ -140,29 +94,23 @@ export default function SearchForm({ onView, onPrint }) {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">
-              No se encontraron documentos que contengan los códigos buscados.
-            </p>
+            <p className="text-gray-500">No se hallaron documentos.</p>
           )}
 
-          {selectedDocs.size > 0 && (
+          {selected.size > 0 && (
             <div className="mt-4 flex justify-end gap-2">
-              <button
-                onClick={handleViewSelected}
-                className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
-              >
-                Ver seleccionados ({selectedDocs.size})
+              <button onClick={() => onView([...selected])} className="bg-blue-500 text-white py-2 px-4 rounded">
+                Ver ({selected.size})
               </button>
-              <button
-                onClick={handlePrintSelected}
-                className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition"
-              >
-                Imprimir seleccionados ({selectedDocs.size})
+              <button onClick={() => onPrint([...selected])} className="bg-green-500 text-white py-2 px-4 rounded">
+                Imprimir ({selected.size})
               </button>
             </div>
           )}
         </div>
       )}
     </div>
-);
-}
+  );
+};
+
+export default SearchForm;

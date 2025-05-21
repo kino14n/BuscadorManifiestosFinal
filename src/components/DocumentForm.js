@@ -1,123 +1,122 @@
-import React, { useState, useRef } from 'react';
-import { saveDocument } from '../utils/storage.js';
+import React, { useState, useRef, useEffect } from 'react';
+import { saveDocument, getDocumentById, deleteDocuments } from '../utils/storage';
 
-export default function DocumentForm({ onSave, existingDoc }) {
+const DocumentForm = ({ existingId, onSaved }) => {
+  const existingDoc = existingId != null ? getDocumentById(existingId) : null;
   const [name, setName] = useState(existingDoc?.name || '');
   const [date, setDate] = useState(existingDoc?.date || '');
-  const [codes, setCodes] = useState(existingDoc?.codes?.join('\n') || '');
+  const [codes, setCodes] = useState(existingDoc?.codes.join('\n') || '');
   const [file, setFile] = useState(null);
   const [success, setSuccess] = useState(false);
   const fileInputRef = useRef(null);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const document = {
-      id: existingDoc?.id || Date.now(),
-      name,
-      date,
-      codes: codes.split('\n').filter((c) => c.trim() !== ''),
-      fileName: file ? file.name : existingDoc?.fileName || null,
-      fileData: file
-        ? URL.createObjectURL(file)
-        : existingDoc?.fileData || null,
-    };
-
-    saveDocument(document);
-    setSuccess(true);
-
-    if (!existingDoc) {
-      setName('');
-      setDate('');
-      setCodes('');
+  useEffect(() => {
+    // cuando cambie existingId recargamos el formulario
+    if (existingDoc) {
+      setName(existingDoc.name);
+      setDate(existingDoc.date);
+      setCodes(existingDoc.codes.join('\n'));
       setFile(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  }, [existingId]);
 
-    if (onSave) onSave();
+  const handleSubmit = e => {
+    e.preventDefault();
+    const doc = {
+      id: existingDoc?.id || Date.now(),
+      name,
+      date,
+      codes: codes.split('\n').map(c => c.trim()).filter(Boolean),
+      fileName: file?.name || existingDoc?.fileName || '',
+      fileData: file ? URL.createObjectURL(file) : existingDoc?.fileData || ''
+    };
+    saveDocument(doc);
+    setSuccess(true);
+    if (!existingDoc) {
+      setName(''); setDate(''); setCodes(''); setFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+    onSaved?.();
     setTimeout(() => setSuccess(false), 3000);
   };
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
+  const handleFileChange = e => setFile(e.target.files[0]);
+
+  const handleDelete = () => {
+    if (existingDoc && window.confirm('¿Eliminar este documento?')) {
+      deleteDocuments([existingDoc.id]);
+      onSaved?.();
+    }
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
+    <div className="p-6 bg-white rounded shadow">
       <h2 className="text-xl font-semibold mb-4">
         {existingDoc ? 'Editar Documento' : 'Subir Documento'}
       </h2>
       {success && (
-        <div className="mb-4 p-2 bg-green-100 text-green-700 rounded">
-          Documento {existingDoc ? 'actualizado' : 'guardado'} exitosamente!
+        <div className="mb-4 p-2 bg-green-100 text-green-800 rounded">
+          Documento {existingDoc ? 'actualizado' : 'guardado'} con éxito.
         </div>
       )}
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
-          <label htmlFor="name" className="block text-sm font-medium mb-1">
-            Nombre del documento
-          </label>
+          <label className="block mb-1">Nombre</label>
           <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
+            type="text" value={name}
+            onChange={e => setName(e.target.value)}
+            className="w-full p-2 border rounded" required
           />
         </div>
         <div className="mb-4">
-          <label htmlFor="date" className="block text-sm font-medium mb-1">
-            Fecha del documento
-          </label>
+          <label className="block mb-1">Fecha</label>
           <input
-            id="date"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="w-full p-2 border rounded"
-            required
+            type="date" value={date}
+            onChange={e => setDate(e.target.value)}
+            className="w-full p-2 border rounded" required
           />
         </div>
         <div className="mb-4">
-          <label htmlFor="file" className="block text-sm font-medium mb-1">
-            Archivo PDF
-          </label>
+          <label className="block mb-1">Archivo PDF</label>
           <input
-            id="file"
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".pdf"
+            type="file" ref={fileInputRef}
+            accept=".pdf" onChange={handleFileChange}
             className="w-full p-2 border rounded"
             required={!existingDoc}
           />
           {existingDoc?.fileName && !file && (
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-gray-600 mt-1">
               Archivo actual: {existingDoc.fileName}
             </p>
           )}
         </div>
         <div className="mb-4">
-          <label htmlFor="codes" className="block text-sm font-medium mb-1">
-            Códigos (uno por línea)
-          </label>
+          <label className="block mb-1">Códigos (uno por línea)</label>
           <textarea
-            id="codes"
-            value={codes}
-            onChange={(e) => setCodes(e.target.value)}
-            className="w-full p-2 border rounded h-40"
-            placeholder="Pega aquí los códigos, uno por línea"
-            required
+            value={codes} onChange={e => setCodes(e.target.value)}
+            className="w-full p-2 border rounded h-32" required
           />
         </div>
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
-        >
-          {existingDoc ? 'Actualizar Documento' : 'Guardar Documento'}
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            className="flex-1 bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+          >
+            {existingDoc ? 'Actualizar' : 'Guardar'}
+          </button>
+          {existingDoc && (
+            <button
+              type="button" onClick={handleDelete}
+              className="flex-1 bg-red-500 text-white py-2 rounded hover:bg-red-600"
+            >
+              Eliminar
+            </button>
+          )}
+        </div>
       </form>
     </div>
   );
-}
+};
 
+export default DocumentForm;

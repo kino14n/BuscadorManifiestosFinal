@@ -1,33 +1,20 @@
-// src/components/Tabs.js
+import React, { useState } from 'react';
+import DocumentForm from './DocumentForm';
+import SearchForm from './SearchForm';
+import DocumentList from './DocumentList';
+import { getDocumentById } from '../utils/storage';
 
-import React, { useState, useEffect } from 'react';
-import DocumentForm from './DocumentForm.js';
-import SearchForm from './SearchForm.js';
-import DocumentList from './DocumentList.js';
-import {
-  getDocuments,
-  getDocumentById,
-  deleteDocument
-} from '../utils/storage.js';
-
-export default function Tabs() {
-  const [activeTab, setActiveTab] = useState('search');
-  const [docs, setDocs] = useState([]);
-  const [editDoc, setEditDoc] = useState(null);
+const Tabs = () => {
+  const [tab, setTab] = useState('search');
+  const [editId, setEditId] = useState(null);
   const [pdfOpen, setPdfOpen] = useState(false);
-  const [currentPdf, setCurrentPdf] = useState(null);
+  const [pdfSrc, setPdfSrc] = useState('');
 
-  useEffect(() => {
-    if (activeTab === 'list') {
-      setDocs(getDocuments());
-    }
-  }, [activeTab]);
-
-  const handleView = (ids) => {
+  const viewPdf = ids => {
     if (ids.length === 1) {
       const d = getDocumentById(ids[0]);
       if (d?.fileData) {
-        setCurrentPdf(d.fileData);
+        setPdfSrc(d.fileData);
         setPdfOpen(true);
       }
     } else {
@@ -38,7 +25,7 @@ export default function Tabs() {
     }
   };
 
-  const handlePrint = (ids) => {
+  const printPdf = ids => {
     ids.forEach(id => {
       const d = getDocumentById(id);
       if (d?.fileData) {
@@ -48,77 +35,146 @@ export default function Tabs() {
     });
   };
 
-  const handleDelete = (ids) => {
-    ids.forEach(id => deleteDocument(id));
-    setDocs(getDocuments());
-  };
+  const closePdf = () => { setPdfOpen(false); setPdfSrc(''); };
 
-  const handleEdit = (id) => {
-    setEditDoc(getDocumentById(id));
-    setActiveTab('upload');
+  const handleAfterSave = () => {
+    setTab('list');
+    setEditId(null);
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto py-8">
       {pdfOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-3xl h-full flex flex-col rounded-lg overflow-hidden">
-            <div className="p-4 flex justify-between border-b">
-              <h3 className="text-lg font-medium">Vista PDF</h3>
-              <button onClick={() => setPdfOpen(false)}>Cerrar</button>
+          <div className="bg-white rounded shadow-lg w-11/12 h-5/6 flex flex-col">
+            <div className="flex justify-between p-4 border-b">
+              <h3>Vista PDF</h3>
+              <button onClick={closePdf} className="text-gray-600">Cerrar</button>
             </div>
-            <iframe
-              src={currentPdf}
-              className="flex-1"
-              title="PDF"
-            />
-            <div className="p-4 border-t flex justify-end">
-              <button onClick={() => window.print()} className="bg-blue-500 text-white px-4 py-2 rounded">
-                Imprimir
-              </button>
-            </div>
+            <iframe src={pdfSrc} className="flex-1" />
           </div>
         </div>
       )}
 
-      <div className="flex border-b">
-        {['search','upload','list'].map(tab => (
+      <nav className="flex border-b mb-6">
+        {['search','upload','list'].map(id => (
           <button
-            key={tab}
-            onClick={() => { setActiveTab(tab); if(tab==='upload') setEditDoc(null); }}
-            className={`py-2 px-4 ${
-              activeTab===tab
-                ? 'border-b-2 border-blue-500 text-blue-500'
-                : 'text-gray-600'
-            }`}
+            key={id}
+            onClick={() => { setTab(id); setEditId(null); }}
+            className={`py-2 px-4 ${tab===id ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
           >
-            {{
-              search: 'Buscar Documentos',
-              upload: 'Subir Documento',
-              list:   'Consultar Documentos'
-            }[tab]}
+            {id==='search' && 'Buscar'}
+            {id==='upload' && 'Subir'}
+            {id==='list' && 'Consultar'}
           </button>
         ))}
-      </div>
+      </nav>
 
-      <div className="mt-4">
-        {activeTab === 'search' && <SearchForm onView={handleView} onPrint={handlePrint} />}
-        {activeTab === 'upload' && (
-          <DocumentForm
-            existingDoc={editDoc}
-            onSave={() => setActiveTab('list')}
-          />
-        )}
-        {activeTab === 'list' && (
-          <DocumentList
-            documentos={docs}
-            onView={handleView}
-            onPrint={handlePrint}
-            onDelete={handleDelete}
-            onEdit={handleEdit}
-          />
-        )}
-      </div>
+      {tab==='search' && <SearchForm onView={viewPdf} onPrint={printPdf} />}
+      {tab==='upload' && <DocumentForm onSaved={handleAfterSave} />}
+      {tab==='list' && (
+        <DocumentList
+          onView={viewPdf}
+          onPrint={printPdf}
+          onEdit={id => { setEditId(id); setTab('upload'); }}
+        />
+      )}
+
+      {tab==='upload' && editId != null && (
+        <DocumentForm existingId={editId} onSaved={handleAfterSave} />
+      )}
     </div>
   );
-}
+};
+
+export default Tabs;
+import React, { useState } from 'react';
+import DocumentForm from './DocumentForm';
+import SearchForm from './SearchForm';
+import DocumentList from './DocumentList';
+import { getDocumentById } from '../utils/storage';
+
+const Tabs = () => {
+  const [tab, setTab] = useState('search');
+  const [editId, setEditId] = useState(null);
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const [pdfSrc, setPdfSrc] = useState('');
+
+  const viewPdf = ids => {
+    if (ids.length === 1) {
+      const d = getDocumentById(ids[0]);
+      if (d?.fileData) {
+        setPdfSrc(d.fileData);
+        setPdfOpen(true);
+      }
+    } else {
+      ids.forEach(id => {
+        const d = getDocumentById(id);
+        if (d?.fileData) window.open(d.fileData, '_blank');
+      });
+    }
+  };
+
+  const printPdf = ids => {
+    ids.forEach(id => {
+      const d = getDocumentById(id);
+      if (d?.fileData) {
+        const w = window.open(d.fileData, '_blank');
+        w.onload = () => w.print();
+      }
+    });
+  };
+
+  const closePdf = () => { setPdfOpen(false); setPdfSrc(''); };
+
+  const handleAfterSave = () => {
+    setTab('list');
+    setEditId(null);
+  };
+
+  return (
+    <div className="max-w-4xl mx-auto py-8">
+      {pdfOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+          <div className="bg-white rounded shadow-lg w-11/12 h-5/6 flex flex-col">
+            <div className="flex justify-between p-4 border-b">
+              <h3>Vista PDF</h3>
+              <button onClick={closePdf} className="text-gray-600">Cerrar</button>
+            </div>
+            <iframe src={pdfSrc} className="flex-1" />
+          </div>
+        </div>
+      )}
+
+      <nav className="flex border-b mb-6">
+        {['search','upload','list'].map(id => (
+          <button
+            key={id}
+            onClick={() => { setTab(id); setEditId(null); }}
+            className={`py-2 px-4 ${tab===id ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-600'}`}
+          >
+            {id==='search' && 'Buscar'}
+            {id==='upload' && 'Subir'}
+            {id==='list' && 'Consultar'}
+          </button>
+        ))}
+      </nav>
+
+      {tab==='search' && <SearchForm onView={viewPdf} onPrint={printPdf} />}
+      {tab==='upload' && <DocumentForm onSaved={handleAfterSave} />}
+      {tab==='list' && (
+        <DocumentList
+          onView={viewPdf}
+          onPrint={printPdf}
+          onEdit={id => { setEditId(id); setTab('upload'); }}
+        />
+      )}
+
+      {tab==='upload' && editId != null && (
+        <DocumentForm existingId={editId} onSaved={handleAfterSave} />
+      )}
+    </div>
+  );
+};
+
+export default Tabs;

@@ -1,240 +1,71 @@
-// src/components/DocumentList.js
-
 import React, { useState } from 'react';
+import { getDocuments, deleteDocuments } from '../utils/storage';
 
-export default function DocumentList({
-  documentos,
-  onView,
-  onPrint,
-  onDelete,
-  onEdit
-}) {
+const DocumentList = ({ onView, onPrint, onEdit }) => {
+  const [allDocs, setAllDocs] = useState(getDocuments());
   const [filter, setFilter] = useState('');
   const [selected, setSelected] = useState(new Set());
-  const [showCodes, setShowCodes] = useState(new Set());
 
-  // filtra por nombre/título
-  const lista = documentos.filter(d =>
-    (d.name || d.titulo)
-      .toLowerCase()
-      .includes(filter.toLowerCase())
+  const visible = allDocs.filter(doc =>
+    doc.name.toLowerCase().includes(filter.toLowerCase())
   );
 
-  const toggleSelect = id => {
+  const toggle = id => {
     const s = new Set(selected);
     s.has(id) ? s.delete(id) : s.add(id);
     setSelected(s);
   };
 
-  const toggleCodes = id => {
-    const s = new Set(showCodes);
-    s.has(id) ? s.delete(id) : s.add(id);
-    setShowCodes(s);
+  const handleDelete = () => {
+    if (selected.size && window.confirm('Eliminar seleccionados?')) {
+      deleteDocuments([...selected]);
+      const rem = allDocs.filter(d => !selected.has(d.id));
+      setAllDocs(rem);
+      setSelected(new Set());
+    }
   };
 
   return (
-    <div>
-      {/* buscador */}
+    <div className="p-6 bg-white rounded shadow">
+      <h2 className="text-xl font-semibold mb-4">Consultar Documentos</h2>
       <input
         type="text"
-        placeholder="Buscar por nombre de documento..."
+        placeholder="Buscar por nombre..."
         value={filter}
         onChange={e => setFilter(e.target.value)}
         className="w-full p-2 border rounded mb-4"
       />
 
-      {/* acciones masivas */}
-      {selected.size > 0 && (
-        <div className="flex justify-end gap-4 mb-4 text-sm">
-          <button onClick={() => onDelete([...selected])} className="text-red-500">
-            Eliminar ({selected.size})
-          </button>
-          <button onClick={() => onView([...selected])} className="text-blue-500">
-            Ver ({selected.size})
-          </button>
-          <button onClick={() => onPrint([...selected])} className="text-green-500">
-            Imprimir ({selected.size})
-          </button>
+      {visible.map(doc => (
+        <div key={doc.id} className="p-4 border-b flex justify-between items-center">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={selected.has(doc.id)}
+              onChange={() => toggle(doc.id)}
+            />
+            <div>
+              <h4 className="font-medium">{doc.name}</h4>
+              <small className="text-gray-600">{doc.date} — {doc.fileName}</small>
+            </div>
+          </label>
+          <div className="space-x-4">
+            <button onClick={() => onView([doc.id])} className="text-blue-500">Ver</button>
+            <button onClick={() => onPrint([doc.id])} className="text-green-500">Imprimir</button>
+            <button onClick={() => onEdit(doc.id)} className="text-indigo-500">Editar</button>
+          </div>
         </div>
-      )}
+      ))}
 
-      {lista.length === 0 ? (
-        <p className="text-gray-500">No hay documentos.</p>
-      ) : (
-        <ul className="space-y-4">
-          {lista.map(doc => (
-            <li key={doc.id} className="p-4 border rounded-lg space-y-2">
-              <div className="flex justify-between items-start">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(doc.id)}
-                    onChange={() => toggleSelect(doc.id)}
-                    className="h-4 w-4"
-                  />
-                  <div>
-                    <h3 className="font-bold">{doc.name || doc.titulo}</h3>
-                    <p className="text-sm text-gray-600">{doc.date}</p>
-                    <p className="text-sm text-gray-600">
-                      Archivo: {doc.fileName}
-                    </p>
-                  </div>
-                </label>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => toggleCodes(doc.id)}
-                    className="text-blue-500 text-sm"
-                  >
-                    {showCodes.has(doc.id) ? 'Ocultar Códigos' : 'Ver Códigos'}
-                  </button>
-                  <button
-                    onClick={() => onEdit(doc.id)}
-                    className="text-green-500 text-sm"
-                  >
-                    Editar
-                  </button>
-                </div>
-              </div>
+      {visible.length === 0 && <p className="text-gray-500">No hay documentos.</p>}
 
-              {showCodes.has(doc.id) && (
-                <div className="pt-2 border-t">
-                  <p className="font-medium mb-1">Códigos:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {doc.codes.map(c => (
-                      <span
-                        key={c}
-                        className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs"
-                      >
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
+      {selected.size > 0 && (
+        <div className="mt-4 flex justify-end gap-2">
+          <button onClick={handleDelete} className="text-red-500">Eliminar ({selected.size})</button>
+        </div>
       )}
     </div>
   );
-}
-// src/components/DocumentList.js
+};
 
-import React, { useState } from 'react';
-
-export default function DocumentList({
-  documentos,
-  onView,
-  onPrint,
-  onDelete,
-  onEdit
-}) {
-  const [filter, setFilter] = useState('');
-  const [selected, setSelected] = useState(new Set());
-  const [showCodes, setShowCodes] = useState(new Set());
-
-  // filtra por nombre/título
-  const lista = documentos.filter(d =>
-    (d.name || d.titulo)
-      .toLowerCase()
-      .includes(filter.toLowerCase())
-  );
-
-  const toggleSelect = id => {
-    const s = new Set(selected);
-    s.has(id) ? s.delete(id) : s.add(id);
-    setSelected(s);
-  };
-
-  const toggleCodes = id => {
-    const s = new Set(showCodes);
-    s.has(id) ? s.delete(id) : s.add(id);
-    setShowCodes(s);
-  };
-
-  return (
-    <div>
-      {/* buscador */}
-      <input
-        type="text"
-        placeholder="Buscar por nombre de documento..."
-        value={filter}
-        onChange={e => setFilter(e.target.value)}
-        className="w-full p-2 border rounded mb-4"
-      />
-
-      {/* acciones masivas */}
-      {selected.size > 0 && (
-        <div className="flex justify-end gap-4 mb-4 text-sm">
-          <button onClick={() => onDelete([...selected])} className="text-red-500">
-            Eliminar ({selected.size})
-          </button>
-          <button onClick={() => onView([...selected])} className="text-blue-500">
-            Ver ({selected.size})
-          </button>
-          <button onClick={() => onPrint([...selected])} className="text-green-500">
-            Imprimir ({selected.size})
-          </button>
-        </div>
-      )}
-
-      {lista.length === 0 ? (
-        <p className="text-gray-500">No hay documentos.</p>
-      ) : (
-        <ul className="space-y-4">
-          {lista.map(doc => (
-            <li key={doc.id} className="p-4 border rounded-lg space-y-2">
-              <div className="flex justify-between items-start">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={selected.has(doc.id)}
-                    onChange={() => toggleSelect(doc.id)}
-                    className="h-4 w-4"
-                  />
-                  <div>
-                    <h3 className="font-bold">{doc.name || doc.titulo}</h3>
-                    <p className="text-sm text-gray-600">{doc.date}</p>
-                    <p className="text-sm text-gray-600">
-                      Archivo: {doc.fileName}
-                    </p>
-                  </div>
-                </label>
-                <div className="flex gap-4">
-                  <button
-                    onClick={() => toggleCodes(doc.id)}
-                    className="text-blue-500 text-sm"
-                  >
-                    {showCodes.has(doc.id) ? 'Ocultar Códigos' : 'Ver Códigos'}
-                  </button>
-                  <button
-                    onClick={() => onEdit(doc.id)}
-                    className="text-green-500 text-sm"
-                  >
-                    Editar
-                  </button>
-                </div>
-              </div>
-
-              {showCodes.has(doc.id) && (
-                <div className="pt-2 border-t">
-                  <p className="font-medium mb-1">Códigos:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {doc.codes.map(c => (
-                      <span
-                        key={c}
-                        className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs"
-                      >
-                        {c}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
+export default DocumentList;
