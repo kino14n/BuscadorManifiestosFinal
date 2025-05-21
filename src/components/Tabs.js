@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import DocumentForm from './DocumentForm';
-import SearchForm from './SearchForm';
-import DocumentList from './DocumentList';
-import { getDocumentById } from '../utils/storage';
+import DocumentForm from './DocumentForm.js';
+import SearchForm from './SearchForm.js';
+import DocumentList from './DocumentList.js';
+import { getDocumentById } from '../utils/storage.js';
 
-const Tabs = () => {
+export default function Tabs() {
   const [activeTab, setActiveTab] = useState('search');
   const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
   const [currentPdf, setCurrentPdf] = useState(null);
@@ -17,25 +17,20 @@ const Tabs = () => {
         setPdfViewerOpen(true);
       }
     } else {
-      // Lógica para manejar múltiples documentos
       alert(`Abriendo ${docIds.length} documentos en nuevas pestañas`);
-      docIds.forEach(id => {
+      docIds.forEach((id) => {
         const doc = getDocumentById(id);
-        if (doc?.fileData) {
-          window.open(doc.fileData, '_blank');
-        }
+        if (doc?.fileData) window.open(doc.fileData, '_blank');
       });
     }
   };
 
   const handlePrintPdf = (docIds) => {
-    docIds.forEach(id => {
+    docIds.forEach((id) => {
       const doc = getDocumentById(id);
       if (doc?.fileData) {
         const printWindow = window.open(doc.fileData, '_blank');
-        printWindow.onload = () => {
-          printWindow.print();
-        };
+        printWindow.onload = () => printWindow.print();
       }
     });
   };
@@ -60,9 +55,9 @@ const Tabs = () => {
               </button>
             </div>
             <div className="flex-1">
-              <iframe 
-                src={currentPdf} 
-                className="w-full h-full" 
+              <iframe
+                src={currentPdf}
+                className="w-full h-full"
                 frameBorder="0"
                 title="PDF Viewer"
               />
@@ -82,19 +77,31 @@ const Tabs = () => {
       <div className="flex border-b">
         <button
           onClick={() => setActiveTab('search')}
-          className={`py-2 px-4 font-medium ${activeTab === 'search' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
+          className={`py-2 px-4 font-medium ${
+            activeTab === 'search'
+              ? 'text-blue-500 border-b-2 border-blue-500'
+              : 'text-gray-500'
+          }`}
         >
           Buscar Documentos
         </button>
         <button
           onClick={() => setActiveTab('upload')}
-          className={`py-2 px-4 font-medium ${activeTab === 'upload' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
+          className={`py-2 px-4 font-medium ${
+            activeTab === 'upload'
+              ? 'text-blue-500 border-b-2 border-blue-500'
+              : 'text-gray-500'
+          }`}
         >
           Subir Documento
         </button>
         <button
           onClick={() => setActiveTab('list')}
-          className={`py-2 px-4 font-medium ${activeTab === 'list' ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
+          className={`py-2 px-4 font-medium ${
+            activeTab === 'list'
+              ? 'text-blue-500 border-b-2 border-blue-500'
+              : 'text-gray-500'
+          }`}
         >
           Consultar Documentos
         </button>
@@ -102,37 +109,13 @@ const Tabs = () => {
 
       <div className="mt-4">
         {activeTab === 'search' && (
-          <SearchForm 
-            onView={handleViewPdf}
-            onPrint={handlePrintPdf}
-          />
+          <SearchForm onView={handleViewPdf} onPrint={handlePrintPdf} />
         )}
         {activeTab === 'upload' && <DocumentForm />}
         {activeTab === 'list' && (
-          <DocumentList 
-            onView={handleViewPdf}
-            onPrint={handlePrintPdf}
-          />
+          <DocumentList onView={handleViewPdf} onPrint={handlePrintPdf} />
         )}
       </div>
     </div>
-  );
-};
-
-export default Tabs;
-
-// DONE
-
-// src/components/DocumentList.js
-import React from 'react';
-
-export default function DocumentList({ documentos }) {
-  if (!documentos.length) return <p>No hay manifiestos.</p>;
-  return (
-    <ul>
-      {documentos.map(doc => (
-        <li key={doc.id}>{doc.titulo}</li>
-      ))}
-    </ul>
-  );
+);
 }
