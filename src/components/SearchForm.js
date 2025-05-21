@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { searchDocumentsByCodes } from '../utils/storage';
+import { searchDocumentsByCodes } from '../utils/storage.js';
 
-const SearchForm = ({ onView, onPrint }) => {
+export default function SearchForm({ onView, onPrint }) {
   const [codes, setCodes] = useState('');
   const [results, setResults] = useState({ documents: [], missingCodes: [] });
   const [searched, setSearched] = useState(false);
@@ -9,7 +9,7 @@ const SearchForm = ({ onView, onPrint }) => {
 
   const handleSearch = (e) => {
     e.preventDefault();
-    const codeList = codes.split('\n').filter(code => code.trim() !== '');
+    const codeList = codes.split('\n').filter((code) => code.trim() !== '');
     const searchResults = searchDocumentsByCodes(codeList);
     setResults(searchResults);
     setSearched(true);
@@ -25,24 +25,16 @@ const SearchForm = ({ onView, onPrint }) => {
 
   const toggleSelectDoc = (docId) => {
     const newSelected = new Set(selectedDocs);
-    if (newSelected.has(docId)) {
-      newSelected.delete(docId);
-    } else {
-      newSelected.add(docId);
-    }
+    if (newSelected.has(docId)) newSelected.delete(docId);
+    else newSelected.add(docId);
     setSelectedDocs(newSelected);
   };
 
   const handleViewSelected = () => {
-    if (onView) {
-      onView(Array.from(selectedDocs));
-    }
+    if (onView) onView(Array.from(selectedDocs));
   };
-
   const handlePrintSelected = () => {
-    if (onPrint) {
-      onPrint(Array.from(selectedDocs));
-    }
+    if (onPrint) onPrint(Array.from(selectedDocs));
   };
 
   return (
@@ -50,7 +42,9 @@ const SearchForm = ({ onView, onPrint }) => {
       <h2 className="text-xl font-semibold mb-4">Buscar Documentos</h2>
       <form onSubmit={handleSearch}>
         <div className="mb-4">
-          <label className="block text-sm font-medium mb-1">Códigos a buscar (uno por línea)</label>
+          <label className="block text-sm font-medium mb-1">
+            Códigos a buscar (uno por línea)
+          </label>
           <textarea
             value={codes}
             onChange={(e) => setCodes(e.target.value)}
@@ -58,7 +52,7 @@ const SearchForm = ({ onView, onPrint }) => {
             placeholder="Pega aquí los códigos a buscar, uno por línea"
           />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 mb-6">
           <button
             type="submit"
             className="flex-1 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
@@ -78,13 +72,18 @@ const SearchForm = ({ onView, onPrint }) => {
       {searched && (
         <div className="mt-6">
           <h3 className="text-lg font-medium mb-2">Resultados:</h3>
-          
+
           {results.missingCodes.length > 0 && (
             <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-              <h4 className="font-medium text-yellow-800 mb-1">Códigos no encontrados:</h4>
+              <h4 className="font-medium text-yellow-800 mb-1">
+                Códigos no encontrados:
+              </h4>
               <div className="flex flex-wrap gap-1">
-                {results.missingCodes.map(code => (
-                  <span key={code} className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded">
+                {results.missingCodes.map((code) => (
+                  <span
+                    key={code}
+                    className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded"
+                  >
                     {code}
                   </span>
                 ))}
@@ -110,13 +109,13 @@ const SearchForm = ({ onView, onPrint }) => {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => onView([doc.id])}
                         className="text-blue-500 hover:text-blue-700 text-sm"
                       >
                         Ver
                       </button>
-                      <button 
+                      <button
                         onClick={() => onPrint([doc.id])}
                         className="text-blue-500 hover:text-blue-700 text-sm"
                       >
@@ -128,7 +127,10 @@ const SearchForm = ({ onView, onPrint }) => {
                     <p className="text-sm font-medium">Códigos encontrados:</p>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {doc.matchedCodes.map((code) => (
-                        <span key={code} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                        <span
+                          key={code}
+                          className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                        >
                           {code}
                         </span>
                       ))}
@@ -138,18 +140,20 @@ const SearchForm = ({ onView, onPrint }) => {
               ))}
             </div>
           ) : (
-            <p className="text-gray-500">No se encontraron documentos que contengan los códigos buscados.</p>
+            <p className="text-gray-500">
+              No se encontraron documentos que contengan los códigos buscados.
+            </p>
           )}
 
           {selectedDocs.size > 0 && (
             <div className="mt-4 flex justify-end gap-2">
-              <button 
+              <button
                 onClick={handleViewSelected}
                 className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
               >
                 Ver seleccionados ({selectedDocs.size})
               </button>
-              <button 
+              <button
                 onClick={handlePrintSelected}
                 className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition"
               >
@@ -160,20 +164,5 @@ const SearchForm = ({ onView, onPrint }) => {
         </div>
       )}
     </div>
-  );
-};
-
-export default SearchForm;
-// src/components/DocumentList.js
-import React from 'react';
-
-export default function DocumentList({ documentos }) {
-  if (!documentos.length) return <p>No hay manifiestos.</p>;
-  return (
-    <ul>
-      {documentos.map(doc => (
-        <li key={doc.id}>{doc.titulo}</li>
-      ))}
-    </ul>
-  );
+);
 }
