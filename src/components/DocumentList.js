@@ -1,67 +1,82 @@
 import React, { useState } from 'react';
-import { getDocuments, deleteDocuments } from '../utils/storage.js';
+import { deleteDocuments, getDocumentById } from '../utils/storage';
 
-const DocumentList = ({ onView, onPrint, onEdit }) => {
-  const [allDocs, setAllDocs] = useState(getDocuments());
-  const [filter, setFilter] = useState('');
+export default function DocumentList({ onView, onPrint }) {
+  const [docs, setDocs] = useState(() => {
+    return JSON.parse(localStorage.getItem('documents') || '[]')
+      .sort((a, b) => new Date(b.date) - new Date(a.date));
+  });
   const [selected, setSelected] = useState(new Set());
+  const [showCodesFor, setShowCodesFor] = useState(null);
 
-  const visible = allDocs.filter(doc =>
-    doc.name.toLowerCase().includes(filter.toLowerCase())
-  );
-
-  const toggle = id => {
+  const toggleSelect = (id) => {
     const s = new Set(selected);
     s.has(id) ? s.delete(id) : s.add(id);
     setSelected(s);
   };
 
   const handleDelete = () => {
-    if (selected.size && window.confirm('Eliminar seleccionados?')) {
-      deleteDocuments([...selected]);
-      setAllDocs(allDocs.filter(d => !selected.has(d.id)));
-      setSelected(new Set());
-    }
+    deleteDocuments(Array.from(selected));
+    const remaining = docs.filter(d => !selected.has(d.id));
+    setDocs(remaining);
+    setSelected(new Set());
   };
 
+  const handleView = () => onView(Array.from(selected));
+  const handlePrint = () => onPrint(Array.from(selected));
+
+  if (!docs.length) return <p>No hay manifiestos.</p>;
+
   return (
-    <div className="p-6 bg-white rounded shadow">
-      <h2 className="text-xl font-semibold mb-4">Consultar Documentos</h2>
-      <input
-        type="text"
-        placeholder="Buscar por nombre..."
-        value={filter}
-        onChange={e => setFilter(e.target.value)}
-        className="w-full p-2 border rounded mb-4"
-      />
-      {visible.map(doc => (
-        <div key={doc.id} className="p-4 border-b flex justify-between items-center">
-          <label className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={selected.has(doc.id)}
-              onChange={() => toggle(doc.id)}
-            />
-            <div>
-              <h4 className="font-medium">{doc.name}</h4>
-              <small className="text-gray-600">{doc.date} — {doc.fileName}</small>
-            </div>
-          </label>
-          <div className="space-x-4">
-            <button onClick={() => onView([doc.id])} className="text-blue-500">Ver</button>
-            <button onClick={() => onPrint([doc.id])} className="text-green-500">Imprimir</button>
-            <button onClick={() => onEdit(doc.id)} className="text-indigo-500">Editar</button>
-          </div>
-        </div>
-      ))}
-      {visible.length === 0 && <p className="text-gray-500">No hay documentos.</p>}
+    <div>
       {selected.size > 0 && (
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="flex justify-end gap-3 mb-4">
           <button onClick={handleDelete} className="text-red-500">Eliminar ({selected.size})</button>
+          <button onClick={handleView} className="text-blue-500">Ver ({selected.size})</button>
+          <button onClick={handlePrint} className="text-green-500">Imprimir ({selected.size})</button>
         </div>
       )}
+
+      <ul className="space-y-4">
+        {docs.map(doc => (
+          <li key={doc.id} className="p-4 border rounded">
+            <div className="flex items-start justify-between">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={selected.has(doc.id)}
+                  onChange={() => toggleSelect(doc.id)}
+                  className="h-4 w-4"
+                />
+                <div>
+                  <p className="font-medium">{doc.name}</p>
+                  <p className="text-sm text-gray-600">{doc.date}</p>
+                  <p className="text-sm text-gray-600">Archivo: {doc.fileName}</p>
+                </div>
+              </label>
+              <button
+                onClick={() => setShowCodesFor(showCodesFor === doc.id ? null : doc.id)}
+                className="text-sm text-blue-500 hover:underline"
+              >
+                {showCodesFor === doc.id ? 'Ocultar Códigos' : 'Ver Códigos'}
+              </button>
+            </div>
+
+            {showCodesFor === doc.id && (
+              <div className="mt-2 pl-6">
+                <p className="text-sm font-medium">Códigos:</p>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {doc.codes.map(code => (
+                    <span key={code} className="bg-gray-100 px-2 py-1 rounded text-xs">
+                      {code}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
-};
-
-export default DocumentList;
+}

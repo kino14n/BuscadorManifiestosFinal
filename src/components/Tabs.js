@@ -81,3 +81,11 @@ const Tabs = () => {
 };
 
 export default Tabs;
+// ...
+{activeTab === 'list' && (
+  <DocumentList
+    onView={handleViewPdf}
+    onPrint={handlePrintPdf}
+  />
+)}
+// ...
