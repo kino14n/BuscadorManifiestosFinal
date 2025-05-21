@@ -1,25 +1,31 @@
 // src/components/Tabs.js
 import React, { useState } from 'react';
-import DocumentForm from './DocumentForm.js';
-import SearchForm from './SearchForm.js';
-import DocumentList from './DocumentList.js';
-import { getDocumentById, deleteDocuments } from '../utils/storage.js';
+import DocumentForm  from './DocumentForm.js';
+import SearchForm    from './SearchForm.js';
+import DocumentList  from './DocumentList.js';
+import {
+  getDocuments,
+  getDocumentById,
+  deleteDocuments
+} from '../utils/storage.js';
 
 const Tabs = () => {
   const [activeTab, setActiveTab] = useState('search');
-  const [editDoc, setEditDoc] = useState(null);
+  const [editDoc,    setEditDoc]    = useState(null);
 
-  // vista previa/imprimir
+  // Mostrar PDF en nueva pestaña
   const handleViewPdf = (ids) => {
-    ids.forEach((id) => {
+    ids.forEach(id => {
       const doc = getDocumentById(id);
       if (doc?.fileData) {
         window.open(doc.fileData, '_blank');
       }
     });
   };
+
+  // Imprimir PDF
   const handlePrintPdf = (ids) => {
-    ids.forEach((id) => {
+    ids.forEach(id => {
       const doc = getDocumentById(id);
       if (doc?.fileData) {
         const w = window.open(doc.fileData, '_blank');
@@ -28,7 +34,7 @@ const Tabs = () => {
     });
   };
 
-  // editar
+  // Pasar a modo edición
   const handleEdit = (ids) => {
     if (ids.length === 1) {
       const doc = getDocumentById(ids[0]);
@@ -37,13 +43,14 @@ const Tabs = () => {
     }
   };
 
-  // eliminar
+  // Borrar documentos seleccionados
   const handleDelete = (ids) => {
     deleteDocuments(ids);
-    // forzar refresco:
+    // recargar lista
     setActiveTab('list');
   };
 
+  // Al guardar en el formulario
   const handleFormSave = () => {
     setEditDoc(null);
     setActiveTab('list');
@@ -51,7 +58,8 @@ const Tabs = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="flex border-b mb-4">
+      {/* Navegación de pestañas */}
+      <div className="flex border-b">
         <button
           onClick={() => setActiveTab('search')}
           className={`py-2 px-4 font-medium ${
@@ -63,10 +71,7 @@ const Tabs = () => {
           Buscar Documentos
         </button>
         <button
-          onClick={() => {
-            setEditDoc(null);
-            setActiveTab('upload');
-          }}
+          onClick={() => setActiveTab('upload')}
           className={`py-2 px-4 font-medium ${
             activeTab === 'upload'
               ? 'text-blue-500 border-b-2 border-blue-500'
@@ -87,16 +92,25 @@ const Tabs = () => {
         </button>
       </div>
 
-      <div>
+      {/* Contenido de cada pestaña */}
+      <div className="mt-4">
         {activeTab === 'search' && (
-          <SearchForm onView={handleViewPdf} onPrint={handlePrintPdf} />
+          <SearchForm
+            onView={handleViewPdf}
+            onPrint={handlePrintPdf}
+          />
         )}
+
         {activeTab === 'upload' && (
-          <DocumentForm existingDoc={editDoc} onSave={handleFormSave} />
+          <DocumentForm
+            existingDoc={editDoc}
+            onSave={handleFormSave}
+          />
         )}
+
         {activeTab === 'list' && (
           <DocumentList
-            documentos={getDocumentById() /* o pasa tu estado de docs */}
+            documentos={getDocuments()}
             onView={handleViewPdf}
             onPrint={handlePrintPdf}
             onEdit={handleEdit}
