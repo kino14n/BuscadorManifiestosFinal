@@ -1,93 +1,83 @@
 // src/components/DocumentList.js
-import React, { useState, useEffect } from 'react';
-import { deleteDocuments, getDocumentById } from '../utils/storage';
+import React, { useState } from 'react';
 
-export default function DocumentList({ onView, onPrint }) {
-  const [docs, setDocs] = useState([]);
-  const [selected, setSelected] = useState(new Set());
-  const [showCodesFor, setShowCodesFor] = useState(null);
+export default function DocumentList({ documentos, onView, onPrint, onDelete }) {
+  // Estado para saber qué documentos tienen sus códigos visibles
+  const [visibleCodes, setVisibleCodes] = useState({});
 
-  // Carga inicial y ordena por fecha descendente
-  useEffect(() => {
-    const all = JSON.parse(localStorage.getItem('documents') || '[]');
-    all.sort((a, b) => new Date(b.date) - new Date(a.date));
-    setDocs(all);
-  }, []);
-
-  const toggleSelect = (id) => {
-    const s = new Set(selected);
-    s.has(id) ? s.delete(id) : s.add(id);
-    setSelected(s);
+  const toggleCodes = (id) => {
+    setVisibleCodes(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const handleDelete = () => {
-    deleteDocuments(Array.from(selected));
-    setDocs(docs.filter(d => !selected.has(d.id)));
-    setSelected(new Set());
-  };
-
-  const handleView = () => onView(Array.from(selected));
-  const handlePrint = () => onPrint(Array.from(selected));
+  if (!documentos.length) return <p>No hay manifiestos.</p>;
 
   return (
-    <div>
-      {selected.size > 0 && (
-        <div className="flex justify-end gap-4 mb-4 text-sm">
-          <button onClick={handleDelete} className="text-red-500 hover:underline">
-            Eliminar ({selected.size})
-          </button>
-          <button onClick={handleView} className="text-blue-500 hover:underline">
-            Ver ({selected.size})
-          </button>
-          <button onClick={handlePrint} className="text-green-500 hover:underline">
-            Imprimir ({selected.size})
-          </button>
-        </div>
-      )}
-
-      <ul className="space-y-4">
-        {docs.map(doc => (
-          <li key={doc.id} className="p-4 border rounded-lg">
-            <div className="flex items-start justify-between">
-              <label className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  checked={selected.has(doc.id)}
-                  onChange={() => toggleSelect(doc.id)}
-                  className="h-4 w-4"
-                />
-                <div>
-                  <p className="font-medium">{doc.name}</p>
-                  <p className="text-sm text-gray-600">{doc.date}</p>
-                  <p className="text-sm text-gray-600">Archivo: {doc.fileName}</p>
-                </div>
-              </label>
-              <button
-                onClick={() => setShowCodesFor(showCodesFor === doc.id ? null : doc.id)}
-                className="text-sm text-blue-500 hover:underline"
-              >
-                {showCodesFor === doc.id ? 'Ocultar Códigos' : 'Ver Códigos'}
-              </button>
+    <div className="space-y-4">
+      {documentos.map(doc => (
+        <div key={doc.id} className="p-4 border rounded-lg bg-white shadow-sm">
+          <div className="flex justify-between items-start">
+            {/* Información básica */}
+            <div>
+              <h4 className="font-medium text-lg">{doc.name || doc.titulo}</h4>
+              {doc.date && <p className="text-sm text-gray-600">{doc.date}</p>}
+              {doc.fileName && (
+                <p className="text-sm text-gray-500">Archivo: {doc.fileName}</p>
+              )}
             </div>
 
-            {showCodesFor === doc.id && (
-              <div className="mt-2 pl-8">
-                <p className="text-sm font-medium">Códigos asignados:</p>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  {doc.codes.map(code => (
-                    <span
-                      key={code}
-                      className="bg-gray-100 px-2 py-1 rounded text-xs"
-                    >
-                      {code}
-                    </span>
-                  ))}
-                </div>
+            {/* Acciones */}
+            <div className="flex gap-3">
+              {onView && (
+                <button
+                  onClick={() => onView([doc.id])}
+                  className="text-blue-500 hover:text-blue-700 text-sm"
+                >
+                  Ver
+                </button>
+              )}
+              {onPrint && (
+                <button
+                  onClick={() => onPrint([doc.id])}
+                  className="text-blue-500 hover:text-blue-700 text-sm"
+                >
+                  Imprimir
+                </button>
+              )}
+              <button
+                onClick={() => toggleCodes(doc.id)}
+                className="text-blue-500 hover:text-blue-700 text-sm"
+              >
+                {visibleCodes[doc.id] ? 'Ocultar Códigos' : 'Ver Códigos'}
+              </button>
+              {onDelete && (
+                <button
+                  onClick={() => onDelete([doc.id])}
+                  className="text-red-500 hover:text-red-700 text-sm"
+                >
+                  Eliminar
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Lista de códigos, sólo si está toggled-on */}
+          {visibleCodes[doc.id] && doc.codes && doc.codes.length > 0 && (
+            <div className="mt-3">
+              <p className="text-sm font-medium mb-1">Códigos:</p>
+              <div className="flex flex-wrap gap-2">
+                {doc.codes.map(code => (
+                  <span
+                    key={code}
+                    className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded"
+                  >
+                    {code}
+                  </span>
+                ))}
               </div>
-            )}
-          </li>
-        ))}
-      </ul>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
