@@ -1,4 +1,3 @@
-// server.js
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -29,8 +28,6 @@ app.get('/api/manifiestos', async (req, res) => {
     res.status(500).json({ error: 'Consulta fallida' });
   }
 });
-
-// ...otros endpoints POST, PUT, DELETE...
 
 // Fallback React
 app.get('*', (req, res) => {
