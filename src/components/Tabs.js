@@ -1,125 +1,70 @@
-// src/components/Tabs.js
-import React, { useState } from 'react';
-import DocumentForm  from './DocumentForm.js';
-import SearchForm    from './SearchForm.js';
-import DocumentList  from './DocumentList.js';
+import React, { useState, useEffect } from 'react';
+import DocumentForm from './DocumentForm.js';
+import DocumentList from './DocumentList.js';
+import SearchForm from './SearchForm.js';
 import {
-  getDocuments,
-  getDocumentById,
-  deleteDocuments
-} from '../utils/storage.js';
+  fetchManifiestos,
+  createManifiesto,
+  updateManifiesto,
+  deleteManifiestos,
+} from '../services/api.js';
 
-const Tabs = () => {
+export default function Tabs() {
   const [activeTab, setActiveTab] = useState('search');
-  const [editDoc,    setEditDoc]    = useState(null);
+  const [docs, setDocs] = useState([]);
+  const [selected, setSelected] = useState([]);
 
-  // Mostrar PDF en nueva pestaña
-  const handleViewPdf = (ids) => {
-    ids.forEach(id => {
-      const doc = getDocumentById(id);
-      if (doc?.fileData) {
-        window.open(doc.fileData, '_blank');
-      }
-    });
+  // cargar lista
+  useEffect(() => {
+    if (activeTab === 'list') load();
+  }, [activeTab]);
+
+  const load = async () => {
+    const data = await fetchManifiestos();
+    setDocs(data);
+    setSelected([]);
   };
 
-  // Imprimir PDF
-  const handlePrintPdf = (ids) => {
-    ids.forEach(id => {
-      const doc = getDocumentById(id);
-      if (doc?.fileData) {
-        const w = window.open(doc.fileData, '_blank');
-        w.onload = () => w.print();
-      }
-    });
-  };
-
-  // Pasar a modo edición
-  const handleEdit = (ids) => {
-    if (ids.length === 1) {
-      const doc = getDocumentById(ids[0]);
-      setEditDoc(doc);
-      setActiveTab('upload');
-    }
-  };
-
-  // Borrar documentos seleccionados
-  const handleDelete = (ids) => {
-    deleteDocuments(ids);
-    // recargar lista
+  const onSave = async (doc, isNew) => {
+    if (isNew) await createManifiesto(doc);
+    else await updateManifiesto(doc.id, doc);
+    load();
     setActiveTab('list');
   };
 
-  // Al guardar en el formulario
-  const handleFormSave = () => {
-    setEditDoc(null);
-    setActiveTab('list');
+  const onDelete = async () => {
+    await deleteManifiestos(selected);
+    load();
   };
 
   return (
     <div className="max-w-4xl mx-auto">
-      {/* Navegación de pestañas */}
       <div className="flex border-b">
-        <button
-          onClick={() => setActiveTab('search')}
-          className={`py-2 px-4 font-medium ${
-            activeTab === 'search'
-              ? 'text-blue-500 border-b-2 border-blue-500'
-              : 'text-gray-500'
-          }`}
-        >
-          Buscar Documentos
-        </button>
-        <button
-          onClick={() => setActiveTab('upload')}
-          className={`py-2 px-4 font-medium ${
-            activeTab === 'upload'
-              ? 'text-blue-500 border-b-2 border-blue-500'
-              : 'text-gray-500'
-          }`}
-        >
-          Subir Documento
-        </button>
-        <button
-          onClick={() => setActiveTab('list')}
-          className={`py-2 px-4 font-medium ${
-            activeTab === 'list'
-              ? 'text-blue-500 border-b-2 border-blue-500'
-              : 'text-gray-500'
-          }`}
-        >
-          Consultar Documentos
-        </button>
+        {['search','upload','list'].map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`py-2 px-4 ${activeTab===tab?'border-b-2 border-blue-500 text-blue-500':'text-gray-500'}`}
+          >
+            {tab==='search'? 'Buscar Documentos' : tab==='upload'? 'Subir Documento' : 'Consultar Documentos'}
+          </button>
+        ))}
       </div>
-
-      {/* Contenido de cada pestaña */}
       <div className="mt-4">
-        {activeTab === 'search' && (
-          <SearchForm
-            onView={handleViewPdf}
-            onPrint={handlePrintPdf}
-          />
-        )}
-
-        {activeTab === 'upload' && (
-          <DocumentForm
-            existingDoc={editDoc}
-            onSave={handleFormSave}
-          />
-        )}
-
+        {activeTab === 'search' && <SearchForm />}
+        {activeTab === 'upload' && <DocumentForm onSave={d=>onSave(d,true)} />}
         {activeTab === 'list' && (
           <DocumentList
-            documentos={getDocuments()}
-            onView={handleViewPdf}
-            onPrint={handlePrintPdf}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
+            documentos={docs}
+            selected={selected}
+            onSelect={setSelected}
+            onView={ids=>window.open(docs.find(d=>d.id===ids[0]).file_data,'_blank')}
+            onPrint={ids=>ids.forEach(id=>window.open(docs.find(d=>d.id===id).file_data).print())}
+            onEdit={doc=>setActiveTab('upload') || setTimeout(()=>onSave(doc,false),0)}
+            onDelete={onDelete}
           />
         )}
       </div>
     </div>
   );
-};
-
-export default Tabs;
+}
