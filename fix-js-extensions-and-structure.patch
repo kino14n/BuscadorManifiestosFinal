@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: ChatGPT <noreply@openai.com>
+Subject: [PATCH] Corrige imports y elimina doble src/src
+
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+-  "scripts": {
+-    "start": "node server.js",
++  "scripts": {
++    "start": "node server.js",
+     "build": "react-scripts build",
+     "postinstall": "npm run build"
+--- a/src/index.js
++++ b/src/index.js
+@@ -1,4 +1,4 @@
+-import React from 'react'
+-import ReactDOM from 'react-dom'
++import React from 'react';
++import ReactDOM from 'react-dom';
+ import App from './App.js';
+ 
+ ReactDOM.render(
+--- a/src/App.js
++++ b/src/App.js
+@@ -1,6 +1,6 @@
+-import React, { useState, useEffect } from 'react'
+-import DocumentForm from './components/DocumentForm'
+-import SearchForm from './components/SearchForm'
+-import DocumentList from './components/DocumentList'
+-import Tabs from './components/Tabs'
++import React, { useState, useEffect } from 'react';
++import DocumentForm from './components/DocumentForm.js';
++import SearchForm from './components/SearchForm.js';
++import DocumentList from './components/DocumentList.js';
++import Tabs from './components/Tabs.js';
+ 
+ function App() {
+   return (
+--- a/src/components/DocumentForm.js
++++ b/src/components/DocumentForm.js
+@@ -1,3 +1,3 @@
+-import React, { useState, useRef } from 'react'
++import React, { useState, useRef } from 'react';
+ import { saveDocument } from '../utils/storage.js';
+ 
+--- a/src/components/DocumentList.js
++++ b/src/components/DocumentList.js
+@@ -1,3 +1,3 @@
+-import React from 'react'
++import React from 'react';
+ 
+ export default function DocumentList({ documentos }) {
+--- a/src/components/SearchForm.js
++++ b/src/components/SearchForm.js
+@@ -1,3 +1,4 @@
+-import React, { useState } from 'react'
++import React, { useState } from 'react';
+ import { searchDocumentsByCodes } from '../utils/storage.js';
+ 
+--- a/src/components/Tabs.js
++++ b/src/components/Tabs.js
+@@ -1,3 +1,4 @@
+-import React, { useState } from 'react'
++import React, { useState } from 'react';
+ import DocumentForm from './DocumentForm.js';
+ import SearchForm   from './SearchForm.js';
+ import DocumentList from './DocumentList.js';
+--- a/src/utils/storage.js
++++ b/src/utils/storage.js
+@@ -1,4 +1,4 @@
+-const getDocuments = () => {
++function getDocuments() {
+   const stored = localStorage.getItem('documents');
+   return stored ? JSON.parse(stored) : [];
+ }
+@@ -20,7 +20,7 @@ export const deleteDocuments = (ids) => {
+ 
+ export const getDocumentById = (id) => {
+   return getDocuments().find(d => d.id === id);
+-};
++};
+ 
+ export const searchDocumentsByCodes = (codes) => {
+   const documents = getDocuments();
