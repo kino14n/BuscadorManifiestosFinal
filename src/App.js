@@ -1,8 +1,8 @@
 // src/App.js
 import React, { useState, useEffect } from 'react';
-import DocumentForm from './components/DocumentForm';
-import DocumentList from './components/DocumentList';
-import { fetchManifiestos } from './utils/api';
+import DocumentForm from './components/DocumentForm.js';
+import DocumentList from './components/DocumentList.js';
+import { fetchManifiestos } from './utils/api.js';
 
 export default function App() {
   const [docs, setDocs] = useState([]);
