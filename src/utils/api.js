@@ -1,33 +1,18 @@
-// funciones para llamar a tu API REST en /api/manifiestos
-const API = '/api/manifiestos';
-
-export async function fetchAll() {
-  const res = await fetch(API);
-  return res.json();
+// src/utils/api.js
+export async function fetchManifiestos() {
+  const res = await fetch('/api/manifiestos');
+  if (!res.ok) throw new Error(res.statusText);
+  return await res.json();
 }
 
-export async function createDocument(doc) {
-  const res = await fetch(API, {
+export async function saveManifiesto(manifest) {
+  const res = await fetch('/api/manifiestos', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(doc)
+    body: JSON.stringify(manifest),
   });
-  return res.json();
-}
-
-export async function updateCodes(id, codes) {
-  const res = await fetch(`${API}/${id}/codigos`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ codes })
-  });
-  return res.json();
-}
-
-export async function deleteDocuments(ids) {
-  await fetch(API, {
-    method: 'DELETE',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids })
-  });
+  if (!res.ok) {
+    throw new Error(`Error ${res.status}: ${await res.text()}`);
+  }
+  return await res.json();
 }

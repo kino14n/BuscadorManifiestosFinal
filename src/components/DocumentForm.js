@@ -1,62 +1,55 @@
-import React, { useState, useRef } from 'react';
-import { createDocument, updateCodes } from '../utils/api.js';
+// src/components/DocumentForm.js
+import React, { useState } from 'react';
+import { saveManifiesto } from '../utils/api';
 
-export default function DocumentForm({ existingDoc, onSave }) {
-  const [name, setName] = useState(existingDoc?.name || '');
-  const [date, setDate] = useState(existingDoc?.date || '');
-  const [codes, setCodes] = useState(existingDoc?.codes.join('\n') || '');
-  const [file, setFile] = useState(null);
-  const fileRef = useRef();
+export default function DocumentForm({ initialData = {}, onSaved }) {
+  const [form, setForm] = useState({
+    id: initialData.id || null,
+    titulo: initialData.titulo || '',
+    contenido: initialData.contenido || '',
+    fecha: initialData.fecha?.slice(0,10) || new Date().toISOString().slice(0,10),
+  });
+  const [saving, setSaving] = useState(false);
 
-  const handleSubmit = async (e) => {
+  const handleChange = e => {
+    const { name, value } = e.target;
+    setForm(f => ({ ...f, [name]: value }));
+  };
+
+  const handleSubmit = async e => {
     e.preventDefault();
-    // para simplificar, aquí tomamos fileData como URL.createObjectURL
-    const doc = {
-      name,
-      date,
-      fileData: file ? URL.createObjectURL(file) : existingDoc.fileData,
-      codes: codes.split('\n').filter(c => c.trim())
-    };
-    if (existingDoc) {
-      await updateCodes(existingDoc.id, doc.codes);
-    } else {
-      await createDocument(doc);
+    setSaving(true);
+    try {
+      const saved = await saveManifiesto(form);
+      onSaved(saved);
+    } catch (err) {
+      console.error(err);
+      alert('Error al guardar: ' + err.message);
+    } finally {
+      setSaving(false);
     }
-    setName(''); setDate(''); setCodes(''); setFile(null);
-    if (fileRef.current) fileRef.current.value = '';
-    onSave && onSave();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-6 bg-white rounded shadow">
-      <h2 className="text-xl mb-4">{existingDoc ? 'Editar' : 'Subir'} Documento</h2>
-      {/* nombre, fecha, file */}
+    <form onSubmit={handleSubmit} className="p-4 border rounded">
       <div className="mb-3">
-        <label>Nombre</label>
-        <input required value={name} onChange={e=>setName(e.target.value)}
-          className="w-full p-2 border rounded" />
+        <label className="block">Título</label>
+        <input name="titulo" value={form.titulo} onChange={handleChange}
+          className="border px-2 py-1 w-full" required/>
       </div>
       <div className="mb-3">
-        <label>Fecha</label>
-        <input type="date" required value={date} onChange={e=>setDate(e.target.value)}
-          className="w-full p-2 border rounded" />
+        <label className="block">Contenido</label>
+        <textarea name="contenido" value={form.contenido}
+          onChange={handleChange} className="border px-2 py-1 w-full" required/>
       </div>
-      {!existingDoc && (
-        <div className="mb-3">
-          <label>PDF</label>
-          <input type="file" accept=".pdf" ref={fileRef}
-            onChange={e=>setFile(e.target.files[0])}
-            className="w-full" required />
-        </div>
-      )}
       <div className="mb-3">
-        <label>Códigos (uno por línea)</label>
-        <textarea required value={codes} onChange={e=>setCodes(e.target.value)}
-          className="w-full p-2 border rounded h-32" />
+        <label className="block">Fecha</label>
+        <input type="date" name="fecha" value={form.fecha}
+          onChange={handleChange} className="border px-2 py-1"/>
       </div>
-      <button type="submit"
-        className="bg-blue-500 text-white px-4 py-2 rounded">
-        {existingDoc ? 'Actualizar' : 'Guardar'}
+      <button type="submit" disabled={saving}
+        className="bg-blue-600 text-white px-4 py-2 rounded">
+        {saving ? 'Guardando…' : 'Guardar'}
       </button>
     </form>
   );
