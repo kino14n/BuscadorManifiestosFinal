@@ -3,7 +3,7 @@ const { Pool } = pkg;
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  console.error('ERROR: no hay DATABASE_URL en env');
+  console.error('ERROR: no hay DATABASE_URL en variables de entorno');
   process.exit(1);
 }
 
