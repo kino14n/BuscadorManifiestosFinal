@@ -1,36 +1,19 @@
-const API = '/api/manifiestos';
+// utils/api.js
+import axios from 'axios';
+const API = axios.create({ baseURL: '/api' });
 
-export async function fetchAll() {
-  const res = await fetch(API);
-  return res.json();
-}
+// devuelve lista
+export const fetchDocuments = () => API.get('/manifiestos').then(r => r.data);
 
-export async function fetchById(id) {
-  const res = await fetch(`${API}/${id}`);
-  return res.json();
-}
+// detalle
+export const fetchDocumentById = (id) => API.get(`/manifiestos/${id}`).then(r => r.data);
 
-export async function createDocument(doc) {
-  const res = await fetch(API, {
-    method: 'POST',
-    headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify(doc)
-  });
-  return res.json();
-}
+// crea o actualiza
+export const saveDocument = (doc) =>
+  doc.id
+    ? API.put(`/manifiestos/${doc.id}`, doc).then(r => r.data)
+    : API.post('/manifiestos', doc).then(r => r.data);
 
-export async function updateDocument(id, doc) {
-  const res = await fetch(`${API}/${id}`, {
-    method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(doc)
-  });
-  return res.json();
-}
-
-export async function deleteDocuments(ids) {
-  const res = await fetch(API, {
-    method:'DELETE',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ ids })
-  });
-  return res.json();
-}
+// borra
+export const deleteDocuments = (ids) =>
+  API.delete('/manifiestos', { data: { ids } }).then(r => r.data);

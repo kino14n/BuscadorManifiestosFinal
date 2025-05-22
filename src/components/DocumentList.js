@@ -1,61 +1,41 @@
-import React, { useEffect, useState } from 'react';
-import { fetchAll, deleteDocuments } from '../utils/api.js';
+// src/components/DocumentList.js
+import React, { useState } from 'react';
+import { deleteDocuments } from '../utils/api.js';
 
-export default function DocumentList({ onView, onPrint }) {
-  const [docs, setDocs] = useState([]);
-  const [selected, setSelected] = useState(new Set());
-  const [showCodes, setShowCodes] = useState({}); // id → bool
-
-  useEffect(() => {
-    fetchAll().then(setDocs);
-  }, []);
-
-  const toggleSelect = id => {
-    const s = new Set(selected);
+export default function DocumentList({ documentos, onAction }) {
+  const [sel, setSel] = useState(new Set());
+  const toggle = id => {
+    const s = new Set(sel);
     s.has(id) ? s.delete(id) : s.add(id);
-    setSelected(s);
+    setSel(s);
   };
-
-  const handleDelete = () => {
-    deleteDocuments(Array.from(selected)).then(() => {
-      fetchAll().then(setDocs);
-      setSelected(new Set());
-    });
+  const doDelete = async () => {
+    await deleteDocuments(Array.from(sel));
+    onAction();
+    setSel(new Set());
   };
-
   return (
     <div>
-      <div className="mb-4 flex justify-between">
-        {selected.size > 0 && (
-          <>
-            <button onClick={() => onView(Array.from(selected))}>Ver ({selected.size})</button>
-            <button onClick={() => onPrint(Array.from(selected))}>Imprimir ({selected.size})</button>
-            <button onClick={handleDelete}>Eliminar ({selected.size})</button>
-          </>
-        )}
-      </div>
+      {sel.size>0 && (
+        <div className="flex justify-end gap-2 mb-2">
+          <button onClick={doDelete} className="text-red-500">Eliminar ({sel.size})</button>
+        </div>
+      )}
       <ul>
-        {docs.map(doc => (
-          <li key={doc.id} className="border-b py-2">
-            <input
-              type="checkbox"
-              checked={selected.has(doc.id)}
-              onChange={()=>toggleSelect(doc.id)}
-            />
-            <span className="ml-2">{doc.name} — {doc.fecha}</span>
-            <button
-              className="ml-4 text-blue-500"
-              onClick={()=>setShowCodes(cs=>({...cs,[doc.id]:!cs[doc.id]}))}
-            >
-              {showCodes[doc.id] ? 'Ocultar Códigos' : 'Ver Códigos'}
-            </button>
-            <button className="ml-2 text-green-500" onClick={()=>onPrint([doc.id])}>Imprimir</button>
-            <button className="ml-2 text-orange-500" onClick={()=>{/* abrir formulario con datos para editar */}}>Editar</button>
-            {showCodes[doc.id] && (
-              <div className="mt-2">
-                <strong>Códigos:</strong> {doc.codes.join(', ')}
+        {documentos.map(d => (
+          <li key={d.id} className="p-4 border rounded mb-2 flex justify-between items-center">
+            <label className="flex items-center gap-2">
+              <input type="checkbox" onChange={()=>toggle(d.id)} checked={sel.has(d.id)}/>
+              <div>
+                <p className="font-medium">{d.nombre}</p>
+                <p className="text-sm text-gray-600">{d.fecha} — {d.archivo_nombre}</p>
               </div>
-            )}
+            </label>
+            <div className="flex gap-4">
+              <button onClick={()=>window.open(d.archivo_datos,'_blank')} className="text-blue-500">Ver</button>
+              <button onClick={()=>window.print()} className="text-green-500">Imprimir</button>
+              <button onClick={()=>window.location=`/?id=${d.id}`} className="text-indigo-500">Editar</button>
+            </div>
           </li>
         ))}
       </ul>
