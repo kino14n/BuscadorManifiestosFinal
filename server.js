@@ -1,8 +1,9 @@
+// server.js
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import pool from './src/db.js'; // asumiendo que db.js está en src/
+import pool from './src/db.js'; // Ajusta la ruta si tu db.js está en otro sitio
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -11,34 +12,39 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Sirve tu build de React
+// Servir archivos estáticos del build de React
 let buildPath = path.join(__dirname, 'build');
 if (!fs.existsSync(buildPath)) {
   buildPath = path.join(__dirname, 'src', 'build');
 }
 app.use(express.static(buildPath));
 
-// GET /api/manifiestos — ajusta columnas según tu tabla real
+// Endpoint para obtener todos los manifiestos
 app.get('/api/manifiestos', async (req, res) => {
   try {
     const { rows } = await pool.query(`
-      SELECT
+      SELECT 
         id,
-        nombre,       -- nombre de tu columna
-        fecha,        -- fecha
-        file_name AS archivo,  -- si tu columna se llama file_name
-        codes         -- o la columna que guardes los códigos
+        nombre,       -- Nombre del documento
+        fecha,        -- Fecha
+        archivo_url,  -- URL/path al PDF
+        codigos       -- Array o JSON con los códigos
       FROM manifiestos
       ORDER BY fecha DESC
     `);
     res.json(rows);
   } catch (err) {
     console.error('Error consultando manifiestos:', err);
-    res.status(500).json({ error: 'Consulta fallida' });
+    res.status(500).json({ error: 'Error al consultar manifiestos' });
   }
 });
 
-// Fallback a React
+// Aquí podrías añadir POST, PUT y DELETE según necesites:
+// app.post('/api/manifiestos', …)
+// app.put('/api/manifiestos/:id', …)
+// app.delete('/api/manifiestos', …)
+
+// Fallback a React App
 app.get('*', (req, res) => {
   res.sendFile(path.join(buildPath, 'index.html'));
 });
