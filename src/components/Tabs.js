@@ -2,63 +2,57 @@ import React, { useState } from 'react';
 import DocumentForm from './DocumentForm.js';
 import SearchForm from './SearchForm.js';
 import DocumentList from './DocumentList.js';
-import { getDocumentById } from '../utils/storage.js';
 
-export default function Tabs() {
-  const [tab, setTab] = useState('search');
-  const [viewer, setViewer] = useState({ open:false, pdf:null });
+const Tabs = () => {
+  const [active, setActive] = useState('search');
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const [currentPdf, setCurrentPdf] = useState(null);
 
-  const handleView = async ids => {
-    if (ids.length===1) {
-      const doc = await getDocumentById(ids[0]);
-      if (doc.archivo_url) setViewer({ open:true, pdf:doc.archivo_url });
+  const handleView = ids => {
+    if (ids.length === 1) {
+      // abre iframe
+      const url = window.location.origin + `/api/manifiestos/${ids[0]}/file`;
+      setCurrentPdf(url);
+      setPdfOpen(true);
     } else {
-      ids.forEach(async id => {
-        const d = await getDocumentById(id);
-        d.archivo_url && window.open(d.archivo_url,'_blank');
-      });
+      ids.forEach(id => window.open(`/api/manifiestos/${id}/file`, '_blank'));
     }
   };
 
-  const handlePrint = async ids => {
-    ids.forEach(async id => {
-      const d = await getDocumentById(id);
-      if (d.archivo_url) {
-        const w = window.open(d.archivo_url,'_blank');
-        w.onload = ()=>w.print();
-      }
-    });
-  };
-
-  const closeViewer = ()=>setViewer({ open:false, pdf:null });
+  const handlePrint = ids => handleView(ids) && window.print();
 
   return (
     <div className="max-w-4xl mx-auto">
-      {viewer.open && (
+      {pdfOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center">
-          <div className="bg-white w-3/4 h-3/4 p-4 rounded-lg flex flex-col">
-            <div className="flex justify-between">
-              <h3>Vista previa</h3>
-              <button onClick={closeViewer}>Cerrar</button>
-            </div>
-            <iframe src={viewer.pdf} className="flex-1 mt-2" />
+          <div className="bg-white w-full h-full p-4">
+            <button onClick={() => setPdfOpen(false)} className="mb-2">Cerrar</button>
+            <iframe src={currentPdf} className="w-full h-full"></iframe>
           </div>
         </div>
       )}
-      <div className="flex border-b mb-4">
-        {['search','upload','list'].map(t=>(
+
+      <div className="flex space-x-4 border-b mb-4">
+        {['search','upload','list'].map(tab => (
           <button
-            key={t}
-            onClick={()=>setTab(t)}
-            className={`py-2 px-4 ${tab===t?'border-b-2 border-blue-500 text-blue-500':'text-gray-600'}`}
+            key={tab}
+            onClick={() => setActive(tab)}
+            className={`py-2 px-4 ${
+              active === tab
+                ? 'text-blue-500 border-b-2 border-blue-500'
+                : 'text-gray-500'
+            }`}
           >
-            { t==='search'? 'Buscar Documentos' : t==='upload'? 'Subir Documento' : 'Consultar Documentos' }
+            {tab === 'search' ? 'Buscar' : tab === 'upload' ? 'Subir' : 'Consultar'}
           </button>
         ))}
       </div>
-      {tab==='search' && <SearchForm onView={handleView} onPrint={handlePrint} />}
-      {tab==='upload' && <DocumentForm onSave={()=>setTab('list')} />}
-      {tab==='list' && <DocumentList onView={handleView} onPrint={handlePrint} />}
+
+      {active === 'search' && <SearchForm onView={handleView} onPrint={handlePrint} />}
+      {active === 'upload' && <DocumentForm onSave={() => setActive('list')} />}
+      {active === 'list' && <DocumentList onView={handleView} onPrint={handlePrint} />}
     </div>
   );
-}
+};
+
+export default Tabs;
