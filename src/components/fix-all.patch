@@ -1,0 +1,142 @@
+diff --git a/package.json b/package.json
+index 1234567..89abcde 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,5 @@
+-  "type": "module",
+   "scripts": {
+     "start": "node server.js",
+     "build": "react-scripts build",
+diff --git a/src/index.js b/src/index.js
+index abcdef0..1234567 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -1,4 +1,4 @@
+-import React from 'react';
++import React from 'react';
+ import ReactDOM from 'react-dom/client';
+-import App from './App';
++import App from './components/App.js';
+ 
+ const root = ReactDOM.createRoot(document.getElementById('root'));
+diff --git a/src/components/App.js b/src/components/App.js
+new file mode 100644
+index 0000000..abcdef1
+--- /dev/null
++++ b/src/components/App.js
+@@ -0,0 +1,20 @@
++import React from 'react';
++import Tabs from './Tabs.js';
++
++export default function App() {
++  return (
++    <div className="container mx-auto p-4">
++      <h1 className="text-2xl font-bold mb-4">Buscador de Manifiestos</h1>
++      <Tabs />
++    </div>
++  );
++}
+diff --git a/src/components/DocumentList.js b/src/components/DocumentList.js
+index abc1234..def5678 100644
+--- a/src/components/DocumentList.js
++++ b/src/components/DocumentList.js
+@@ -1,4 +1,4 @@
+-import React, { useEffect, useState } from 'react';
++import React, { useEffect, useState } from 'react';
+ import { getManifiestos, deleteManifiesto } from '../utils/api.js';
+ import Tabs from './Tabs.js';
+ // … aquí tu toggle Ver/Ocultar Códigos intacto
+diff --git a/src/utils/api.js b/src/utils/api.js
+new file mode 100644
+index 0000000..fedcba9
+--- /dev/null
++++ b/src/utils/api.js
+@@ -0,0 +1,40 @@
++export async function getManifiestos() {
++  const res = await fetch('/api/manifiestos');
++  return res.json();
++}
++export async function createManifiesto(data) {
++  const res = await fetch('/api/manifiestos', {
++    method: 'POST',
++    headers: { 'Content-Type': 'application/json' },
++    body: JSON.stringify(data),
++  });
++  return res.json();
++}
++export async function updateManifiesto(id, data) {
++  const res = await fetch(`/api/manifiestos/${id}`, {
++    method: 'PUT',
++    headers: { 'Content-Type': 'application/json' },
++    body: JSON.stringify(data),
++  });
++  return res.json();
++}
++export async function deleteManifiesto(id) {
++  await fetch(`/api/manifiestos/${id}`, { method: 'DELETE' });
++}
+diff --git a/db.js b/db.js
+index 1122334..4455667 100644
+--- a/db.js
++++ b/db.js
+@@ -1,5 +1,15 @@
+-import pkg from 'pg';
++import pkg from 'pg';
+ const { Pool } = pkg;
+ 
++// usa VARIABLE de entorno DATABASE_URL de Render
+ const connectionString = process.env.DATABASE_URL;
++if (!connectionString) {
++  console.error('ERROR: no DATABASE_URL en env');
++  process.exit(1);
++}
++
+ const pool = new Pool({
+   connectionString,
+   ssl: { rejectUnauthorized: false },
+diff --git a/server.js b/server.js
+index aabbccd..ddeeff0 100644
+--- a/server.js
++++ b/server.js
+@@ -1,6 +1,30 @@
+ import express from 'express';
++import path from 'path';
++import fs from 'fs';
++import { fileURLToPath } from 'url';
+ import pool from './db.js';
+ 
+ const app = express();
++const __filename = fileURLToPath(import.meta.url);
++const __dirname = path.dirname(__filename);
+ const PORT = process.env.PORT || 3000;
+ 
+ app.use(express.json());
++
++// sirve React desde build/
++let buildPath = path.join(__dirname, 'build');
++if (!fs.existsSync(buildPath)) {
++  buildPath = path.join(__dirname, 'src', 'build');
++}
++app.use(express.static(buildPath));
++
++// CRUD real en BD Render:
++app.get('/api/manifiestos', async (req, res) => {
++  try {
++    const { rows } = await pool.query(
++      'SELECT id, titulo, contenido, fecha FROM manifiestos ORDER BY fecha DESC'
++    );
++    res.json(rows);
++  } catch (err) {
++    console.error('Error consultando manifiestos:', err);
++    res.status(500).json({ error: 'Consulta fallida' });
++  }
++});
++
++// fallback para React Router
++app.get('*', (req, res) => {
++  res.sendFile(path.join(buildPath, 'index.html'));
++});
++
+ app.listen(PORT, () => {
+   console.log(`🚀 Server en puerto ${PORT}`);
+ });
