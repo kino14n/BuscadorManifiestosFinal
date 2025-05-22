@@ -1,9 +1,9 @@
-// server.js
+// server.js (en la raíz)
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import pool from './db.js'; // db.js en la raíz
+import pool from './db.js';
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -12,14 +12,12 @@ const __dirname = path.dirname(__filename);
 const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
-// Detecta carpeta build
+// Carpeta build de React
 let buildPath = path.join(__dirname, 'build');
-if (!fs.existsSync(buildPath)) {
-  buildPath = path.join(__dirname, 'src', 'build');
-}
+if (!fs.existsSync(buildPath)) buildPath = path.join(__dirname, 'src', 'build');
 app.use(express.static(buildPath));
 
-// API Endpoints
+// GET /api/manifiestos
 app.get('/api/manifiestos', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -38,9 +36,7 @@ app.get('/api/manifiestos', async (req, res) => {
   }
 });
 
-// ...otros endpoints POST, PUT, DELETE que uses...
-
-// Fallback React
+// Fallback a React
 app.get('*', (req, res) => {
   res.sendFile(path.join(buildPath, 'index.html'));
 });
