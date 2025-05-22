@@ -1,79 +1,64 @@
 import React, { useEffect, useState } from 'react';
-import { listDocuments, deleteDocuments } from '../utils/api.js';
+import { fetchAll, deleteDocuments } from '../utils/api.js';
 
-const DocumentList = ({ onView, onPrint }) => {
+export default function DocumentList({ onView, onPrint }) {
   const [docs, setDocs] = useState([]);
   const [selected, setSelected] = useState(new Set());
   const [showCodes, setShowCodes] = useState({}); // id → bool
 
   useEffect(() => {
-    listDocuments().then(setDocs);
+    fetchAll().then(setDocs);
   }, []);
 
-  const toggle = id => {
+  const toggleSelect = id => {
     const s = new Set(selected);
     s.has(id) ? s.delete(id) : s.add(id);
     setSelected(s);
   };
 
-  const handleDelete = async () => {
-    await deleteDocuments([...selected]);
-    setDocs(prev => prev.filter(d => !selected.has(d.id)));
-    setSelected(new Set());
+  const handleDelete = () => {
+    deleteDocuments(Array.from(selected)).then(() => {
+      fetchAll().then(setDocs);
+      setSelected(new Set());
+    });
   };
 
   return (
-    <div className="p-6 bg-white rounded shadow">
-      <h2 className="text-xl mb-4">Consultar Documentos</h2>
-      <input
-        placeholder="Buscar por nombre..."
-        className="w-full border p-2 rounded mb-4"
-        onChange={e => {
-          const term = e.target.value.toLowerCase();
-          setDocs(prev => prev.filter(d => d.name.toLowerCase().includes(term)));
-        }}
-      />
-      {docs.map(doc => (
-        <div key={doc.id} className="border-b py-4">
-          <label className="flex items-center gap-2">
+    <div>
+      <div className="mb-4 flex justify-between">
+        {selected.size > 0 && (
+          <>
+            <button onClick={() => onView(Array.from(selected))}>Ver ({selected.size})</button>
+            <button onClick={() => onPrint(Array.from(selected))}>Imprimir ({selected.size})</button>
+            <button onClick={handleDelete}>Eliminar ({selected.size})</button>
+          </>
+        )}
+      </div>
+      <ul>
+        {docs.map(doc => (
+          <li key={doc.id} className="border-b py-2">
             <input
               type="checkbox"
               checked={selected.has(doc.id)}
-              onChange={() => toggle(doc.id)}
+              onChange={()=>toggleSelect(doc.id)}
             />
-            <div>
-              <strong>{doc.name}</strong> — {doc.fecha} — {doc.filename}
-            </div>
-          </label>
-          <div className="mt-2 flex gap-2">
-            <button onClick={() => setShowCodes(s => ({ ...s, [doc.id]: !s[doc.id] }))} className="text-indigo-500">
+            <span className="ml-2">{doc.name} — {doc.fecha}</span>
+            <button
+              className="ml-4 text-blue-500"
+              onClick={()=>setShowCodes(cs=>({...cs,[doc.id]:!cs[doc.id]}))}
+            >
               {showCodes[doc.id] ? 'Ocultar Códigos' : 'Ver Códigos'}
             </button>
-            <button onClick={() => onView([doc.id])} className="text-blue-500">
-              Ver
-            </button>
-            <button onClick={() => onPrint([doc.id])} className="text-green-500">
-              Imprimir
-            </button>
-          </div>
-          {showCodes[doc.id] && (
-            <div className="mt-2">
-              {doc.codes.map(c => (
-                <span key={c} className="px-2 py-1 bg-gray-100 rounded mr-1 text-sm">
-                  {c}
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-      ))}
-      {selected.size > 0 && (
-        <button onClick={handleDelete} className="mt-4 text-red-500">
-          Eliminar ({selected.size})
-        </button>
-      )}
+            <button className="ml-2 text-green-500" onClick={()=>onPrint([doc.id])}>Imprimir</button>
+            <button className="ml-2 text-orange-500" onClick={()=>{/* abrir formulario con datos para editar */}}>Editar</button>
+            {showCodes[doc.id] && (
+              <div className="mt-2">
+                <strong>Códigos:</strong> {doc.codes.join(', ')}
+              </div>
+            )}
+          </li>
+        ))}
+      </ul>
     </div>
   );
-};
-
-export default DocumentList;
+}
