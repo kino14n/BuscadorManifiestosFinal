@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import DocumentForm from './DocumentForm.js.js';
-import DocumentList from './DocumentList.js.js';
-import SearchForm from './SearchForm.js.js';
+import DocumentForm from './DocumentForm.js.';
+import DocumentList from './DocumentList.js.';
+import SearchForm from './SearchForm.js.';
 
 export default function Tabs() {
   const [tab, setTab] = useState('search');
