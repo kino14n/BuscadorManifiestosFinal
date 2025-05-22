@@ -1,10 +1,9 @@
-// db.js
 import pkg from 'pg';
 const { Pool } = pkg;
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
-  console.error('❌ ERROR: falta DATABASE_URL en ENV');
+  console.error('ERROR: no hay DATABASE_URL en env');
   process.exit(1);
 }
 

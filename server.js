@@ -1,4 +1,3 @@
-// server.js
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -12,84 +11,79 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
-// Serve React build
+// servir build de React
 let buildPath = path.join(__dirname, 'build');
 if (!fs.existsSync(buildPath)) {
-  buildPath = path.join(__dirname, 'build');
+  buildPath = path.join(__dirname, 'src', 'build');
 }
 app.use(express.static(buildPath));
 
-// --- API routes ---
+// --- API REST para documentos ---
 
-// listado
-app.get('/api/manifiestos', async (req, res) => {
+// Listar
+app.get('/api/manifiestos', async (_, res) => {
   try {
-    const { rows } = await pool.query('SELECT * FROM manifiestos ORDER BY fecha DESC');
+    const { rows } = await pool.query(
+      'SELECT id, nombre AS name, fecha AS date, archivosrc AS fileData, codigos AS codes FROM manifiestos ORDER BY fecha DESC'
+    );
     res.json(rows);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al listar' });
+    res.status(500).json({ error: 'Error al listar manifiestos' });
   }
 });
 
-// detalle
-app.get('/api/manifiestos/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { rows } = await pool.query('SELECT * FROM manifiestos WHERE id = $1', [id]);
-    res.json(rows[0] || null);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Error al obtener' });
-  }
-});
-
-// crear
+// Crear
 app.post('/api/manifiestos', async (req, res) => {
+  const { name, date, fileData, codes } = req.body;
   try {
-    const { name, date, codes, fileName, fileData } = req.body;
     const { rows } = await pool.query(
-      `INSERT INTO manifiestos (nombre, fecha, codigos, archivo_nombre, archivo_datos)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [name, date, codes, fileName, fileData]
+      `INSERT INTO manifiestos (nombre, fecha, archivosrc, codigos)
+       VALUES ($1, $2, $3, $4)
+       RETURNING id, nombre AS name, fecha AS date, archivosrc AS fileData, codigos AS codes`,
+      [name, date, fileData, codes]
     );
-    res.json(rows[0]);
+    res.status(201).json(rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al crear' });
+    res.status(500).json({ error: 'Error al crear manifiesto' });
   }
 });
 
-// actualizar
-app.put('/api/manifiestos/:id', async (req, res) => {
+// Actualizar (códigos)
+app.put('/api/manifiestos/:id/codigos', async (req, res) => {
+  const { id } = req.params;
+  const { codes } = req.body;
   try {
-    const { id } = req.params;
-    const { name, date, codes, fileName, fileData } = req.body;
     const { rows } = await pool.query(
-      `UPDATE manifiestos SET nombre=$1, fecha=$2, codigos=$3, archivo_nombre=$4, archivo_datos=$5
-       WHERE id=$6 RETURNING *`,
-      [name, date, codes, fileName, fileData, id]
+      `UPDATE manifiestos SET codigos = $1 WHERE id = $2
+       RETURNING id, nombre AS name, fecha AS date, archivosrc AS fileData, codigos AS codes`,
+      [codes, id]
     );
+    if (!rows.length) return res.status(404).end();
     res.json(rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al actualizar' });
+    res.status(500).json({ error: 'Error al actualizar códigos' });
   }
 });
 
-// borrar
+// Eliminar
 app.delete('/api/manifiestos', async (req, res) => {
+  const { ids } = req.body; // [1,2,3]
   try {
-    const { ids } = req.body; // espera { ids: [1,2,3] }
-    await pool.query('DELETE FROM manifiestos WHERE id = ANY($1)', [ids]);
-    res.json({ ok: true });
+    await pool.query(
+      `DELETE FROM manifiestos WHERE id = ANY($1::int[])`,
+      [ids]
+    );
+    res.status(204).end();
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Error al eliminar' });
+    res.status(500).json({ error: 'Error al eliminar manifiestos' });
   }
 });
 
-// React fallback
+// Fallback React
 app.get('*', (req, res) => {
   res.sendFile(path.join(buildPath, 'index.html'));
 });

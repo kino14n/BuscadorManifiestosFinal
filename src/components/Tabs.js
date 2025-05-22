@@ -1,35 +1,48 @@
-// src/components/Tabs.js
 import React, { useState } from 'react';
 import DocumentForm from './DocumentForm.js';
-import SearchForm from './SearchForm.js';
 import DocumentList from './DocumentList.js';
-import { fetchDocuments } from '../utils/api.js';
+import SearchForm from './SearchForm.js';
 
 export default function Tabs() {
-  const [tab, setTab] = useState('consultar');
-  const [docs, setDocs] = useState([]);
+  const [tab, setTab] = useState('search');
+  const [editing, setEditing] = useState(null);
 
-  const reload = () => fetchDocuments().then(setDocs);
-
-  React.useEffect(reload, []);
+  const handleView = ids => {
+    ids.forEach(id => {
+      const win = window.open('', '_blank');
+      // ideal: fetch el documento y mostrar en iframe
+      // por simplicidad: no implementado aquí.
+    });
+  };
+  const handlePrint = ids => console.log('print', ids);
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex border-b mb-4">
-        {['buscar','subir','consultar'].map(t => (
+        {['search','upload','consult'].map(t=>(
           <button
             key={t}
-            onClick={() => setTab(t)}
-            className={`py-2 px-4 font-medium ${tab===t ? 'text-blue-500 border-b-2 border-blue-500' : 'text-gray-500'}`}
-          >
-            {t==='buscar' ? 'Buscar Documentos' : t==='subir' ? 'Subir Documento' : 'Consultar Documentos'}
+            onClick={()=>{ setTab(t); setEditing(null); }}
+            className={`px-4 py-2 ${tab===t?'border-b-2 border-blue-500 text-blue-500':'text-gray-500'}`}>
+            {t==='search'? 'Buscar Documentos' : t==='upload'? 'Subir Documento' : 'Consultar Documentos'}
           </button>
         ))}
       </div>
 
-      {tab==='buscar' && <SearchForm onView={reload} />}
-      {tab==='subir' && <DocumentForm onSave={reload} />}
-      {tab==='consultar' && <DocumentList documentos={docs} onAction={reload} />}
+      {tab==='search' && <SearchForm onView={handleView} onPrint={handlePrint} />}
+      {tab==='upload' && <DocumentForm onSave={()=>setTab('consult')} />}
+      {tab==='consult' && (
+        <DocumentList
+          onView={handleView}
+          onPrint={handlePrint}
+          onEdit={doc => { setEditing(doc); setTab('upload'); }}
+        />
+      )}
+
+      {/* editar en mismo formulario */}
+      {editing && tab==='upload' && (
+        <DocumentForm existingDoc={editing} onSave={()=>setTab('consult')} />
+      )}
     </div>
   );
 }

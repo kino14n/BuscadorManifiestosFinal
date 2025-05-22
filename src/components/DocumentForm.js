@@ -1,69 +1,63 @@
-// src/components/DocumentForm.js
 import React, { useState, useRef } from 'react';
-import { saveDocument, fetchDocumentById } from '../utils/api.js';
+import { createDocument, updateCodes } from '../utils/api.js';
 
-export default function DocumentForm({ onSave }) {
-  const [existing, setExisting] = useState(null);
-  const [name, setName] = useState('');
-  const [date, setDate] = useState('');
-  const [codes, setCodes] = useState('');
+export default function DocumentForm({ existingDoc, onSave }) {
+  const [name, setName] = useState(existingDoc?.name || '');
+  const [date, setDate] = useState(existingDoc?.date || '');
+  const [codes, setCodes] = useState(existingDoc?.codes.join('\n') || '');
   const [file, setFile] = useState(null);
-  const [success, setSuccess] = useState(false);
   const fileRef = useRef();
 
-  // si edit: carga un manifiesto
-  React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('id')) {
-      fetchDocumentById(params.get('id')).then(doc => {
-        setExisting(doc);
-        setName(doc.nombre);
-        setDate(doc.fecha);
-        setCodes(doc.codigos.join('\n'));
-      });
-    }
-  }, []);
-
-  const handle = async e => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    // para simplificar, aquí tomamos fileData como URL.createObjectURL
     const doc = {
-      id: existing?.id,
       name,
       date,
-      codes: codes.split('\n').filter(c=>c),
-      fileName: file?.name || existing?.archivo_nombre,
-      fileData: file ? URL.createObjectURL(file) : existing?.archivo_datos
+      fileData: file ? URL.createObjectURL(file) : existingDoc.fileData,
+      codes: codes.split('\n').filter(c => c.trim())
     };
-    await saveDocument(doc);
-    setSuccess(true);
-    if (!existing) {
-      setName(''); setDate(''); setCodes(''); setFile(null);
-      fileRef.current.value = '';
+    if (existingDoc) {
+      await updateCodes(existingDoc.id, doc.codes);
+    } else {
+      await createDocument(doc);
     }
-    onSave?.();
-    setTimeout(()=>setSuccess(false),3000);
+    setName(''); setDate(''); setCodes(''); setFile(null);
+    if (fileRef.current) fileRef.current.value = '';
+    onSave && onSave();
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">
-        {existing ? 'Editar Documento' : 'Subir Documento'}
-      </h2>
-      {success && (
-        <div className="mb-4 p-2 bg-green-100 text-green-700 rounded">
-          Documento {existing ? 'actualizado' : 'creado'} exitosamente!
+    <form onSubmit={handleSubmit} className="p-6 bg-white rounded shadow">
+      <h2 className="text-xl mb-4">{existingDoc ? 'Editar' : 'Subir'} Documento</h2>
+      {/* nombre, fecha, file */}
+      <div className="mb-3">
+        <label>Nombre</label>
+        <input required value={name} onChange={e=>setName(e.target.value)}
+          className="w-full p-2 border rounded" />
+      </div>
+      <div className="mb-3">
+        <label>Fecha</label>
+        <input type="date" required value={date} onChange={e=>setDate(e.target.value)}
+          className="w-full p-2 border rounded" />
+      </div>
+      {!existingDoc && (
+        <div className="mb-3">
+          <label>PDF</label>
+          <input type="file" accept=".pdf" ref={fileRef}
+            onChange={e=>setFile(e.target.files[0])}
+            className="w-full" required />
         </div>
       )}
-      <form onSubmit={handle}>
-        {/* name, date, file, codes fields (igual a localstorage versión) */}
-        {/* ... */}
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white py-2 px-4 rounded"
-        >
-          {existing ? 'Actualizar' : 'Guardar Documento'}
-        </button>
-      </form>
-    </div>
+      <div className="mb-3">
+        <label>Códigos (uno por línea)</label>
+        <textarea required value={codes} onChange={e=>setCodes(e.target.value)}
+          className="w-full p-2 border rounded h-32" />
+      </div>
+      <button type="submit"
+        className="bg-blue-500 text-white px-4 py-2 rounded">
+        {existingDoc ? 'Actualizar' : 'Guardar'}
+      </button>
+    </form>
   );
 }

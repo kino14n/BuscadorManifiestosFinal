@@ -1,44 +1,71 @@
-// src/components/DocumentList.js
-import React, { useState } from 'react';
-import { deleteDocuments } from '../utils/api.js';
+import React, { useState, useEffect } from 'react';
+import { fetchAll, deleteDocuments } from '../utils/api.js';
 
-export default function DocumentList({ documentos, onAction }) {
-  const [sel, setSel] = useState(new Set());
+export default function DocumentList({ onView, onEdit, onPrint }) {
+  const [docs, setDocs] = useState([]);
+  const [selected, setSelected] = useState(new Set());
+  const [showCodesFor, setShowCodesFor] = useState(null);
+
+  useEffect(() => {
+    fetchAll().then(setDocs);
+  }, []);
+
   const toggle = id => {
-    const s = new Set(sel);
+    const s = new Set(selected);
     s.has(id) ? s.delete(id) : s.add(id);
-    setSel(s);
+    setSelected(s);
   };
-  const doDelete = async () => {
-    await deleteDocuments(Array.from(sel));
-    onAction();
-    setSel(new Set());
+
+  const handleDelete = async () => {
+    await deleteDocuments([...selected]);
+    setSelected(new Set());
+    setDocs(await fetchAll());
   };
+
   return (
-    <div>
-      {sel.size>0 && (
-        <div className="flex justify-end gap-2 mb-2">
-          <button onClick={doDelete} className="text-red-500">Eliminar ({sel.size})</button>
-        </div>
-      )}
+    <div className="p-6 bg-white rounded shadow">
+      <h2 className="text-xl mb-4">Consultar Documentos</h2>
       <ul>
-        {documentos.map(d => (
-          <li key={d.id} className="p-4 border rounded mb-2 flex justify-between items-center">
-            <label className="flex items-center gap-2">
-              <input type="checkbox" onChange={()=>toggle(d.id)} checked={sel.has(d.id)}/>
-              <div>
-                <p className="font-medium">{d.nombre}</p>
-                <p className="text-sm text-gray-600">{d.fecha} — {d.archivo_nombre}</p>
+        {docs.map(d => (
+          <li key={d.id} className="border-b py-2">
+            <div className="flex items-center justify-between">
+              <label>
+                <input type="checkbox" checked={selected.has(d.id)}
+                  onChange={()=>toggle(d.id)} className="mr-2" />
+                <span className="font-medium">{d.name}</span>
+                <span className="text-gray-500 ml-2">{d.date}</span>
+              </label>
+              <div className="space-x-3">
+                <button onClick={()=>setShowCodesFor(showCodesFor===d.id?null:d.id)}
+                  className="text-blue-500 text-sm">
+                  {showCodesFor===d.id ? 'Ocultar Códigos' : 'Ver Códigos'}
+                </button>
+                <button onClick={()=>onEdit(d)}
+                  className="text-green-500 text-sm">Editar</button>
+                <button onClick={()=>onView([d.id])}
+                  className="text-blue-500 text-sm">Ver</button>
+                <button onClick={()=>onPrint([d.id])}
+                  className="text-green-500 text-sm">Imprimir</button>
               </div>
-            </label>
-            <div className="flex gap-4">
-              <button onClick={()=>window.open(d.archivo_datos,'_blank')} className="text-blue-500">Ver</button>
-              <button onClick={()=>window.print()} className="text-green-500">Imprimir</button>
-              <button onClick={()=>window.location=`/?id=${d.id}`} className="text-indigo-500">Editar</button>
             </div>
+            {showCodesFor===d.id && (
+              <div className="mt-2 ml-8">
+                {d.codes.map(c=>(
+                  <span key={c} className="inline-block bg-gray-100 px-2 py-1 mr-1 rounded">
+                    {c}
+                  </span>
+                ))}
+              </div>
+            )}
           </li>
         ))}
       </ul>
+      {selected.size>0 && (
+        <div className="mt-4 text-right">
+          <button onClick={handleDelete}
+            className="text-red-500">Eliminar ({selected.size})</button>
+        </div>
+      )}
     </div>
   );
 }
