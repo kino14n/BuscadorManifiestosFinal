@@ -1,56 +1,47 @@
 // src/components/DocumentForm.js
 import React, { useState } from 'react';
-import { saveManifiesto } from '../utils/api';
 
-export default function DocumentForm({ initialData = {}, onSaved }) {
-  const [form, setForm] = useState({
-    id: initialData.id || null,
-    titulo: initialData.titulo || '',
-    contenido: initialData.contenido || '',
-    fecha: initialData.fecha?.slice(0,10) || new Date().toISOString().slice(0,10),
-  });
-  const [saving, setSaving] = useState(false);
+export default function DocumentForm({ initial, onSaved, onCancel }) {
+  const [titulo,   setTitulo]   = useState(initial?.titulo   || '');
+  const [contenido, setContenido] = useState(initial?.contenido || '');
+  const [fecha,     setFecha]     = useState(initial?.fecha?.slice(0,10) || '');
 
-  const handleChange = e => {
-    const { name, value } = e.target;
-    setForm(f => ({ ...f, [name]: value }));
-  };
-
-  const handleSubmit = async e => {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const saved = await saveManifiesto(form);
-      onSaved(saved);
-    } catch (err) {
-      console.error(err);
-      alert('Error al guardar: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
+  const save = async () => {
+    const method = initial ? 'PUT' : 'POST';
+    const url    = initial ? `/api/manifiestos/${initial.id}` : '/api/manifiestos';
+    await fetch(url, {
+      method,
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ titulo, contenido, fecha })
+    });
+    onSaved();
   };
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 border rounded">
-      <div className="mb-3">
-        <label className="block">Título</label>
-        <input name="titulo" value={form.titulo} onChange={handleChange}
-          className="border px-2 py-1 w-full" required/>
+    <div className="border p-4 rounded mt-4 bg-white">
+      <h2 className="font-semibold mb-2">{initial ? 'Editar' : 'Nuevo'} Manifiesto</h2>
+      <input
+        className="border p-1 w-full mb-2"
+        placeholder="Título"
+        value={titulo}
+        onChange={e => setTitulo(e.target.value)}
+      />
+      <input
+        type="date"
+        className="border p-1 w-full mb-2"
+        value={fecha}
+        onChange={e => setFecha(e.target.value)}
+      />
+      <textarea
+        className="border p-1 w-full mb-2 h-24"
+        placeholder="Códigos, uno por línea"
+        value={contenido}
+        onChange={e => setContenido(e.target.value)}
+      />
+      <div className="space-x-2">
+        <button onClick={save}   className="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
+        <button onClick={onCancel} className="px-4 py-2 border rounded">Cancelar</button>
       </div>
-      <div className="mb-3">
-        <label className="block">Contenido</label>
-        <textarea name="contenido" value={form.contenido}
-          onChange={handleChange} className="border px-2 py-1 w-full" required/>
-      </div>
-      <div className="mb-3">
-        <label className="block">Fecha</label>
-        <input type="date" name="fecha" value={form.fecha}
-          onChange={handleChange} className="border px-2 py-1"/>
-      </div>
-      <button type="submit" disabled={saving}
-        className="bg-blue-600 text-white px-4 py-2 rounded">
-        {saving ? 'Guardando…' : 'Guardar'}
-      </button>
-    </form>
+    </div>
   );
 }
