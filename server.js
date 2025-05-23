@@ -7,71 +7,56 @@ const app = express();
 const __dirname = path.resolve();
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'build')));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Listar
+// Obtener todos los manifiestos
 app.get('/api/manifestos', async (req, res) => {
   try {
-    const { rows } = await pool.query(
-      `SELECT id, titulo, contenido, fecha FROM manifiestos`
-    );
-    res.json(rows);
+    const { rows } = await pool.query(`
+      SELECT id, titulo, contenido, fecha, codigos
+      FROM manifestos
+      ORDER BY fecha DESC
+    `);
+
+    // Asegurar que codigos sea un arreglo
+    const docs = rows.map(r => ({
+      ...r,
+      codigos: typeof r.codigos === 'string'
+        ? JSON.parse(r.codigos)
+        : Array.isArray(r.codigos)
+          ? r.codigos
+          : []
+    }));
+
+    res.json(docs);
   } catch (err) {
     console.error('Error consultando manifestos:', err);
-    res.status(500).json({ error: 'DB error' });
+    res.status(500).json([]);
   }
 });
 
-// Crear
+// Crear un manifiesto
 app.post('/api/manifestos', async (req, res) => {
-  const { titulo, contenido, fecha } = req.body;
+  const { titulo, contenido, fecha, codigos } = req.body;
   try {
-    const { rows } = await pool.query(
-      `INSERT INTO manifiestos(titulo, contenido, fecha)
-       VALUES($1, $2, $3) RETURNING *`,
-      [titulo, contenido, fecha]
-    );
-    res.json(rows[0]);
+    const jsCodigos = JSON.stringify(codigos || []);
+    const { rows } = await pool.query(`
+      INSERT INTO manifestos (titulo, contenido, fecha, codigos)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, titulo, contenido, fecha, codigos
+    `, [titulo, contenido, fecha, jsCodigos]);
+    res.status(201).json(rows[0]);
   } catch (err) {
-    console.error('Error insertando manifiesto:', err);
-    res.status(500).json({ error: 'DB error' });
+    console.error('Error creando manifiesto:', err);
+    res.status(500).json({ error: 'no pudo crear' });
   }
 });
 
-// Actualizar
-app.put('/api/manifestos/:id', async (req, res) => {
-  const { id } = req.params;
-  const { titulo, contenido, fecha } = req.body;
-  try {
-    const { rows } = await pool.query(
-      `UPDATE manifiestos
-       SET titulo=$1, contenido=$2, fecha=$3
-       WHERE id=$4 RETURNING *`,
-      [titulo, contenido, fecha, id]
-    );
-    res.json(rows[0]);
-  } catch (err) {
-    console.error('Error actualizando:', err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-// Borrar
-app.delete('/api/manifestos/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    await pool.query(`DELETE FROM manifiestos WHERE id=$1`, [id]);
-    res.sendStatus(204);
-  } catch (err) {
-    console.error('Error borrando:', err);
-    res.status(500).json({ error: 'DB error' });
-  }
-});
-
-// Siempre al final: entrega React
+// Servir React en producción
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
+// Puerto y arranque
 const port = process.env.PORT || 10000;
-app.listen(port, () => console.log('🚀 Server en puerto', port));
+app.listen(port, () => console.log(`🚀 Server en puerto ${port}`));
