@@ -1,84 +1,77 @@
 // server.js
 import express from 'express';
 import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
 import pool from './db.js';
 
-const app     = express();
-const __file  = fileURLToPath(import.meta.url);
-const __dir   = path.dirname(__file);
-const PORT    = process.env.PORT || 10000;
+const app = express();
+const __dirname = path.resolve();
 
 app.use(express.json());
-
-// Servir build React
-let buildPath = path.join(__dir, 'build');
-if (!fs.existsSync(buildPath)) {
-  buildPath = path.join(__dir, 'src', 'build');
-}
-app.use(express.static(buildPath));
+app.use(express.static(path.join(__dirname, 'build')));
 
 // Listar
-app.get('/api/manifiestos', async (req, res) => {
+app.get('/api/manifestos', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT id, titulo, contenido, fecha FROM manifiestos ORDER BY fecha DESC`
+      `SELECT id, titulo, contenido, fecha FROM manifiestos`
     );
     res.json(rows);
   } catch (err) {
-    console.error('Error consultando manifiestos:', err);
-    res.status(500).json({ error: 'Consulta fallida' });
+    console.error('Error consultando manifestos:', err);
+    res.status(500).json({ error: 'DB error' });
   }
 });
 
 // Crear
-app.post('/api/manifiestos', async (req, res) => {
+app.post('/api/manifestos', async (req, res) => {
   const { titulo, contenido, fecha } = req.body;
   try {
     const { rows } = await pool.query(
-      `INSERT INTO manifiestos (titulo, contenido, fecha)
-       VALUES ($1,$2,$3) RETURNING id, titulo, contenido, fecha`,
+      `INSERT INTO manifiestos(titulo, contenido, fecha)
+       VALUES($1, $2, $3) RETURNING *`,
       [titulo, contenido, fecha]
     );
-    res.status(201).json(rows[0]);
+    res.json(rows[0]);
   } catch (err) {
-    console.error('Error creando manifiesto:', err);
-    res.status(500).json({ error: 'Inserción fallida' });
+    console.error('Error insertando manifiesto:', err);
+    res.status(500).json({ error: 'DB error' });
   }
 });
 
 // Actualizar
-app.put('/api/manifiestos/:id', async (req, res) => {
+app.put('/api/manifestos/:id', async (req, res) => {
   const { id } = req.params;
   const { titulo, contenido, fecha } = req.body;
   try {
     const { rows } = await pool.query(
-      `UPDATE manifiestos SET titulo=$1, contenido=$2, fecha=$3
-       WHERE id=$4 RETURNING id, titulo, contenido, fecha`,
+      `UPDATE manifiestos
+       SET titulo=$1, contenido=$2, fecha=$3
+       WHERE id=$4 RETURNING *`,
       [titulo, contenido, fecha, id]
     );
     res.json(rows[0]);
   } catch (err) {
-    console.error('Error actualizando manifiesto:', err);
-    res.status(500).json({ error: 'Actualización fallida' });
+    console.error('Error actualizando:', err);
+    res.status(500).json({ error: 'DB error' });
   }
 });
 
 // Borrar
-app.delete('/api/manifiestos/:id', async (req, res) => {
+app.delete('/api/manifestos/:id', async (req, res) => {
+  const { id } = req.params;
   try {
-    await pool.query(`DELETE FROM manifiestos WHERE id=$1`, [req.params.id]);
-    res.status(204).end();
+    await pool.query(`DELETE FROM manifiestos WHERE id=$1`, [id]);
+    res.sendStatus(204);
   } catch (err) {
-    console.error('Error borrando manifiesto:', err);
-    res.status(500).json({ error: 'Eliminación fallida' });
+    console.error('Error borrando:', err);
+    res.status(500).json({ error: 'DB error' });
   }
 });
 
-// React SPA
+// Siempre al final: entrega React
 app.get('*', (req, res) => {
-  res.sendFile(path.join(buildPath, 'index.html'));
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`🚀 Server en puerto ${PORT}`));
+const port = process.env.PORT || 10000;
+app.listen(port, () => console.log('🚀 Server en puerto', port));

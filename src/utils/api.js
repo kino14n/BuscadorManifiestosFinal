@@ -1,41 +1,19 @@
-// src/App.js
-import React, { useState, useEffect } from 'react';
-import SearchForm    from './components/SearchForm.js.';
-import DocumentList  from './components/DocumentList.js.';
-import DocumentForm  from './components/DocumentForm.js.';
+export const listManifestos = () =>
+  fetch('/api/manifestos').then(res => res.json());
 
-export default function App() {
-  const [docs, setDocs]       = useState([]);
-  const [filter, setFilter]   = useState('');
-  const [editing, setEditing] = useState(null);
+export const createManifesto = data =>
+  fetch('/api/manifestos', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).then(res => res.json());
 
-  const load = async () => {
-    const res = await fetch('/api/manifiestos');
-    setDocs(await res.json());
-    setEditing(null);
-  };
+export const updateManifesto = (id, data) =>
+  fetch(`/api/manifestos/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  }).then(res => res.json());
 
-  useEffect(() => { load(); }, []);
-
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Buscador de Manifiestos</h1>
-      <SearchForm onSearch={setFilter} />
-      <DocumentList
-        documents={docs.filter(d =>
-          d.titulo.toLowerCase().includes(filter.toLowerCase())
-        )}
-        onEdit={setEditing}
-        onRefresh={load}
-      />
-      {editing && (
-        <DocumentForm
-          key={editing.id}
-          initial={editing}
-          onSaved={load}
-          onCancel={() => setEditing(null)}
-        />
-      )}
-    </div>
-  );
-}
+export const deleteManifesto = id =>
+  fetch(`/api/manifestos/${id}`, { method: 'DELETE' });
