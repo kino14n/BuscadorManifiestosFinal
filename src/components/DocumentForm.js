@@ -1,47 +1,42 @@
-// src/components/DocumentForm.js
 import React, { useState } from 'react';
+import { createOne } from '../utils/api.js';
 
-export default function DocumentForm({ initial, onSaved, onCancel }) {
-  const [titulo,   setTitulo]   = useState(initial?.titulo   || '');
-  const [contenido, setContenido] = useState(initial?.contenido || '');
-  const [fecha,     setFecha]     = useState(initial?.fecha?.slice(0,10) || '');
+export default function DocumentForm() {
+  const [form, setForm] = useState({ titulo:'', contenido:'', fecha:'', codigos:'' });
+  const handle = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  const save = async () => {
-    const method = initial ? 'PUT' : 'POST';
-    const url    = initial ? `/api/manifiestos/${initial.id}` : '/api/manifiestos';
-    await fetch(url, {
-      method,
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ titulo, contenido, fecha })
-    });
-    onSaved();
+  const onSubmit = async e => {
+    e.preventDefault();
+    const payload = {
+      titulo: form.titulo,
+      contenido: form.contenido,
+      fecha: form.fecha,
+      codigos: form.codigos.split('\n').map(c=>c.trim()).filter(Boolean)
+    };
+    try {
+      await createOne(payload);
+      alert('Documento guardado');
+      setForm({ titulo:'', contenido:'', fecha:'', codigos:'' });
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (
-    <div className="border p-4 rounded mt-4 bg-white">
-      <h2 className="font-semibold mb-2">{initial ? 'Editar' : 'Nuevo'} Manifiesto</h2>
-      <input
-        className="border p-1 w-full mb-2"
-        placeholder="Título"
-        value={titulo}
-        onChange={e => setTitulo(e.target.value)}
-      />
-      <input
-        type="date"
-        className="border p-1 w-full mb-2"
-        value={fecha}
-        onChange={e => setFecha(e.target.value)}
-      />
-      <textarea
-        className="border p-1 w-full mb-2 h-24"
-        placeholder="Códigos, uno por línea"
-        value={contenido}
-        onChange={e => setContenido(e.target.value)}
-      />
-      <div className="space-x-2">
-        <button onClick={save}   className="px-4 py-2 bg-blue-600 text-white rounded">Guardar</button>
-        <button onClick={onCancel} className="px-4 py-2 border rounded">Cancelar</button>
+    <form onSubmit={onSubmit} className="space-y-4">
+      <div>
+        <label>Nombre</label>
+        <input name="titulo" onChange={handle} value={form.titulo} className="border w-full px-2" />
       </div>
-    </div>
+      <div>
+        <label>Fecha</label>
+        <input name="fecha" type="date" onChange={handle} value={form.fecha} className="border w-full px-2" />
+      </div>
+      <div>
+        <label>Códigos (uno por línea)</label>
+        <textarea name="codigos" onChange={handle} value={form.codigos} className="border w-full px-2 h-24" />
+      </div>
+      <button type="submit" className="bg-blue-500 text-white px-4 py-2">Guardar</button>
+    </form>
   );
 }

@@ -1,62 +1,52 @@
 // server.js
 import express from 'express';
-import path from 'path';
+import cors from 'cors';
 import pool from './db.js';
+import path from 'path';
 
 const app = express();
-const __dirname = path.resolve();
-
+app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
 
-// Obtener todos los manifiestos
+const port = process.env.PORT || 10000;
+
+// Listar todos
 app.get('/api/manifestos', async (req, res) => {
   try {
-    const { rows } = await pool.query(`
+    const result = await pool.query(`
       SELECT id, titulo, contenido, fecha, codigos
-      FROM manifestos
-      ORDER BY fecha DESC
+      FROM manifiestos ORDER BY fecha DESC
     `);
-
-    // Asegurar que codigos sea un arreglo
-    const docs = rows.map(r => ({
-      ...r,
-      codigos: typeof r.codigos === 'string'
-        ? JSON.parse(r.codigos)
-        : Array.isArray(r.codigos)
-          ? r.codigos
-          : []
-    }));
-
-    res.json(docs);
+    res.json(result.rows);
   } catch (err) {
-    console.error('Error consultando manifestos:', err);
-    res.status(500).json([]);
+    console.error('Error consultando manifiestos:', err);
+    res.status(500).json({ error: 'Error en servidor' });
   }
 });
 
-// Crear un manifiesto
+// Crear uno nuevo
 app.post('/api/manifestos', async (req, res) => {
   const { titulo, contenido, fecha, codigos } = req.body;
   try {
-    const jsCodigos = JSON.stringify(codigos || []);
-    const { rows } = await pool.query(`
-      INSERT INTO manifestos (titulo, contenido, fecha, codigos)
-      VALUES ($1, $2, $3, $4)
-      RETURNING id, titulo, contenido, fecha, codigos
-    `, [titulo, contenido, fecha, jsCodigos]);
-    res.status(201).json(rows[0]);
+    const result = await pool.query(
+      `INSERT INTO manifiestos (titulo, contenido, fecha, codigos)
+       VALUES ($1,$2,$3,$4) RETURNING *`,
+      [titulo, contenido, fecha, JSON.stringify(codigos)]
+    );
+    res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error creando manifiesto:', err);
-    res.status(500).json({ error: 'no pudo crear' });
+    res.status(500).json({ error: 'Error en servidor' });
   }
 });
 
-// Servir React en producción
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+// Servir el build de React
+const __dirname = path.resolve();
+app.use(express.static(path.join(__dirname, 'src', 'build')));
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'src', 'build', 'index.html'));
 });
 
-// Puerto y arranque
-const port = process.env.PORT || 10000;
-app.listen(port, () => console.log(`🚀 Server en puerto ${port}`));
+app.listen(port, () => {
+  console.log(`🚀 Server en puerto ${port}`);
+});
